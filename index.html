@@ -4,11 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-  <meta name="theme-color" content="#061426">
-
-  <meta name="description"
-        content="商丘工学院 AI 未来概念校园——交互式三维粒子校园">
+  <meta name="theme-color" content="#041426">
 
   <title>商丘工学院 · AI 未来概念校园</title>
 
@@ -16,365 +12,191 @@
 </head>
 
 <body>
-
-  <!-- 三维粒子场景 -->
+  <!-- Three.js 三维场景 -->
   <div id="stage"></div>
 
-  <!-- HUD 氛围层 -->
+  <!-- 背景氛围 -->
   <div class="atmosphere"></div>
+  <div class="scanline"></div>
 
-  <!-- 顶部品牌栏 -->
+  <!-- 顶部品牌 -->
   <header class="topbar">
-
     <div class="brand">
-
       <span class="brand-glyph">
-        <i></i>
-        <i></i>
-        <i></i>
+        <i></i><i></i><i></i>
       </span>
 
       <div class="brand-copy">
         <strong>SQIST <b>·</b> FUTURE CAMPUS</strong>
         <small>AI EMPOWERS EDUCATION · CONNECTS THE FUTURE</small>
       </div>
-
     </div>
 
     <div class="top-status">
       <span class="live-dot"></span>
-      <span id="globalStatus">SMART CAMPUS</span>
+      <span id="globalStatus">DIGITAL TWIN</span>
       <b>/ 2045</b>
     </div>
-
   </header>
 
-  <!-- 控制面板开关 -->
-  <button
-    id="panelToggle"
-    class="panel-toggle"
-    type="button"
-    aria-expanded="false"
-    aria-controls="controlPanels">
-
-    <span class="toggle-icon">☰</span>
-
-    <span id="panelToggleText">交互中心</span>
-
-    <span class="toggle-indicator"></span>
-
-  </button>
-
-  <!-- 可收纳的双侧面板 -->
-  <div id="controlPanels" class="control-panels">
-
-    <div class="panel-backdrop" id="panelBackdrop"></div>
-
-    <!-- 左侧功能面板 -->
-    <aside class="left-panel">
-
-      <div class="panel-mobile-heading">
-        <span>01 / CAMPUS SYSTEM</span>
-
-        <button
-          class="panel-close"
-          type="button"
-          data-close-panels
-          aria-label="关闭控制面板">×</button>
-      </div>
-
-      <div class="eyebrow">
-        <span>01</span>
-        AI · EDUCATION · ARCHITECTURE
-      </div>
-
-      <canvas
-        id="heroParticleText"
-        width="760"
-        height="245"
-        aria-label="智慧校园 未来已来粒子文字">
-      </canvas>
-
-      <p class="hero-subtitle">
-        让建筑连接数据，让教育连接未来。
-      </p>
-
-      <div class="title-underline">
-        <i></i>
-        <i></i>
-      </div>
-
-      <div class="module-menu">
-
-        <button class="module-button active"
-                data-mode="ai"
-                type="button">
-
-          <span class="module-icon">✳</span>
-
-          <span class="module-copy">
-            <b>AI 智慧教学</b>
-            <small>个性化学习 · 智能助教</small>
-          </span>
-
-          <span class="module-arrow">↗</span>
-
-        </button>
-
-        <button class="module-button"
-                data-mode="manage"
-                type="button">
-
-          <span class="module-icon">⌘</span>
-
-          <span class="module-copy">
-            <b>智慧校园管理</b>
-            <small>数字孪生 · 实时感知</small>
-          </span>
-
-          <span class="module-arrow">↗</span>
-
-        </button>
-
-        <button class="module-button"
-                data-mode="life"
-                type="button">
-
-          <span class="module-icon">⌂</span>
-
-          <span class="module-copy">
-            <b>智慧校园生活</b>
-            <small>空间互联 · 便捷服务</small>
-          </span>
-
-          <span class="module-arrow">↗</span>
-
-        </button>
-
-        <button class="module-button"
-                data-mode="energy"
-                type="button">
-
-          <span class="module-icon">♧</span>
-
-          <span class="module-copy">
-            <b>绿色能源网络</b>
-            <small>低碳校园 · 能源优化</small>
-          </span>
-
-          <span class="module-arrow">↗</span>
-
-        </button>
-
-        <button class="module-button"
-                data-mode="transport"
-                type="button">
-
-          <span class="module-icon">⇄</span>
-
-          <span class="module-copy">
-            <b>智慧交通调度</b>
-            <small>路径分析 · 智能引导</small>
-          </span>
-
-          <span class="module-arrow">↗</span>
-
-        </button>
-
-      </div>
-
-      <div class="panel-footnote">
-        SELECT A SYSTEM<br>
-        TO ACTIVATE PARTICLE RESPONSE
-      </div>
-
-    </aside>
-
-    <!-- 右侧实时控制面板 -->
-    <aside class="right-panel">
-
-      <div class="right-panel-heading">
-
-        <div>
-          <span class="section-kicker">INTERACTIVE SYSTEM</span>
-          <h2>校园智能感知</h2>
-          <p>选择模式，观察三维场景的实时变化。</p>
-        </div>
-
-        <button
-          class="panel-close"
-          type="button"
-          data-close-panels
-          aria-label="关闭控制面板">×</button>
-
-      </div>
-
-      <div class="panel-divider"></div>
-
-      <button class="holo-card active"
-              data-mode="ai"
-              type="button">
-
-        <span class="card-index">01</span>
-        <span class="card-symbol">✳</span>
-
-        <span class="card-text">
-          <b>AI 智慧教学</b>
-          <small>教学建筑 · 智能连接</small>
-        </span>
-
-        <span class="card-status"></span>
-
-      </button>
-
-      <button class="holo-card"
-              data-mode="manage"
-              type="button">
-
-        <span class="card-index">02</span>
-        <span class="card-symbol">⌘</span>
-
-        <span class="card-text">
-          <b>数字孪生</b>
-          <small>建筑扫描 · 粒子映射</small>
-        </span>
-
-        <span class="card-status"></span>
-
-      </button>
-
-      <button class="holo-card"
-              data-mode="life"
-              type="button">
-
-        <span class="card-index">03</span>
-        <span class="card-symbol">⌂</span>
-
-        <span class="card-text">
-          <b>智慧校园生活</b>
-          <small>湖面波纹 · 空间联动</small>
-        </span>
-
-        <span class="card-status"></span>
-
-      </button>
-
-      <button class="holo-card"
-              data-mode="energy"
-              type="button">
-
-        <span class="card-index">04</span>
-        <span class="card-symbol">♧</span>
-
-        <span class="card-text">
-          <b>绿色能源网络</b>
-          <small>能量传输 · 绿色脉冲</small>
-        </span>
-
-        <span class="card-status"></span>
-
-      </button>
-
-      <button class="holo-card"
-              data-mode="transport"
-              type="button">
-
-        <span class="card-index">05</span>
-        <span class="card-symbol">⇄</span>
-
-        <span class="card-text">
-          <b>智慧交通</b>
-          <small>道路光流 · 环形调度</small>
-        </span>
-
-        <span class="card-status"></span>
-
-      </button>
-
-      <!-- 真实场景状态 -->
-      <div class="scene-response">
-
-        <div class="response-header">
-          <span class="live-dot"></span>
-          <span>SCENE RESPONSE</span>
-          <b id="responseState">ACTIVE</b>
-        </div>
-
-        <strong id="responseText">智慧教学系统已启动</strong>
-
-        <p id="responseDetail">
-          教学建筑正在接入粒子数据网络。
-        </p>
-
-        <div class="response-progress">
-          <i id="responseProgressBar"></i>
-        </div>
-
-        <div class="response-caption">
-          <span>PARTICLE LINK</span>
-          <span id="responsePercent">100%</span>
-        </div>
-
-      </div>
-
-      <button
-        id="closePanelBottom"
-        class="close-panel-bottom"
-        type="button">
-
-        收起控制面板
-        <span>↗</span>
-
-      </button>
-
-    </aside>
-
-  </div>
-
-  <!-- 场景标注 -->
-  <div class="scene-callout callout-tower">
-    <span class="callout-leader"></span>
-    <div>
-      <b>AI LEARNING HUB</b>
-      <small>智慧教学中心</small>
-    </div>
-  </div>
-
-  <div class="scene-callout callout-data">
-    <span class="callout-leader"></span>
-    <div>
-      <b>DIGITAL TWIN</b>
-      <small>校园数字孪生</small>
-    </div>
-  </div>
-
-  <div class="scene-callout callout-green">
-    <span class="callout-leader"></span>
-    <div>
-      <b>GREEN ENERGY</b>
-      <small>绿色能源网络</small>
-    </div>
-  </div>
-
-  <!-- 当前模式说明 -->
-  <div class="mode-banner">
-
-    <span class="mode-banner-dot"></span>
+  <!-- 当前模式 -->
+  <section class="mode-indicator">
+    <span class="mode-light"></span>
 
     <div>
       <small id="modeEyebrow">CAMPUS MODE / 01</small>
       <strong id="modeTitle">AI 智慧教学</strong>
     </div>
 
-    <span class="mode-live">LIVE</span>
+    <span class="live-badge">LIVE</span>
+  </section>
 
+  <!-- 左侧交互入口 -->
+  <button id="panelToggle"
+          class="panel-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="interactionPanel">
+    <span class="toggle-icon">☰</span>
+    <span id="panelToggleText">展开交互</span>
+    <span class="toggle-light"></span>
+  </button>
+
+  <!-- 可收起的交互面板 -->
+  <aside id="interactionPanel" class="interaction-panel">
+    <div class="panel-heading">
+      <div>
+        <small>INTERACTION CENTER</small>
+        <strong>校园智能感知系统</strong>
+      </div>
+
+      <button id="panelClose"
+              class="panel-close"
+              type="button"
+              aria-label="收起交互面板">×</button>
+    </div>
+
+    <p class="panel-description">
+      切换校园模式，观察建筑粒子与数据网络的实时变化。
+    </p>
+
+    <button class="mode-button active" data-mode="ai" type="button">
+      <span class="mode-number">01</span>
+      <span class="mode-symbol">✳</span>
+      <span class="mode-copy">
+        <strong>AI 智慧教学</strong>
+        <small>学习资源 · 智能助教</small>
+      </span>
+      <span class="mode-state"></span>
+    </button>
+
+    <button class="mode-button" data-mode="manage" type="button">
+      <span class="mode-number">02</span>
+      <span class="mode-symbol">⌘</span>
+      <span class="mode-copy">
+        <strong>数字孪生</strong>
+        <small>空间映射 · 状态感知</small>
+      </span>
+      <span class="mode-state"></span>
+    </button>
+
+    <button class="mode-button" data-mode="energy" type="button">
+      <span class="mode-number">03</span>
+      <span class="mode-symbol">♧</span>
+      <span class="mode-copy">
+        <strong>绿色能源网络</strong>
+        <small>能源传输 · 低碳优化</small>
+      </span>
+      <span class="mode-state"></span>
+    </button>
+
+    <button class="mode-button" data-mode="transport" type="button">
+      <span class="mode-number">04</span>
+      <span class="mode-symbol">⇄</span>
+      <span class="mode-copy">
+        <strong>智慧交通</strong>
+        <small>路径分析 · 智能调度</small>
+      </span>
+      <span class="mode-state"></span>
+    </button>
+
+    <div class="system-cycle">
+      <div class="cycle-heading">
+        <span>SYSTEM RESPONSE</span>
+        <span>实时响应</span>
+      </div>
+
+      <div class="cycle-steps">
+        <span class="cycle-step current" data-step="0">感知</span>
+        <i></i>
+        <span class="cycle-step" data-step="1">分析</span>
+        <i></i>
+        <span class="cycle-step" data-step="2">决策</span>
+        <i></i>
+        <span class="cycle-step" data-step="3">响应</span>
+      </div>
+
+      <p id="responseText">正在感知校园空间</p>
+      <small id="responseDetail">等待系统响应</small>
+    </div>
+  </aside>
+
+  <!-- 建筑标注 -->
+  <div class="scene-label label-tower">
+    <span class="label-point"></span>
+    <div>
+      <strong>AI LEARNING HUB</strong>
+      <small>智慧教学中心</small>
+    </div>
   </div>
 
-  <!-- 实时数据 -->
-  <div class="bottom-left">
+  <div class="scene-label label-data">
+    <span class="label-point"></span>
+    <div>
+      <strong>DIGITAL TWIN</strong>
+      <small>校园数字孪生</small>
+    </div>
+  </div>
 
+  <!-- 底部视角控制 -->
+  <div class="view-controls">
+    <button id="autoOrbit" class="control-button on" type="button">
+      <span class="control-dot"></span>
+      <span>自动环绕</span>
+      <b>ON</b>
+    </button>
+
+    <button id="resetView" class="control-button" type="button">
+      ⌖ 复位视角
+    </button>
+  </div>
+
+  <div class="view-hint">
+    拖动旋转 <i></i> 双指缩放 <i></i> 点击场景交互
+  </div>
+
+  <!-- 署名 -->
+  <section class="signature">
+    <div class="signature-kicker">
+      <span class="live-dot"></span>
+      CONCEPT BY · CLASS 01
+    </div>
+
+    <canvas id="signatureParticles"
+            width="800"
+            height="220"></canvas>
+
+    <div class="signature-bottom">
+      <span>商丘工学院</span>
+      <i></i>
+      <span>智建 1 班 · 李镇圳</span>
+    </div>
+  </section>
+
+  <!-- 数据 -->
+  <div class="bottom-left">
     <div class="metric">
-      <strong id="particleMetric">—</strong>
+      <strong id="particleMetric">0</strong>
       <small>ACTIVE PARTICLES</small>
     </div>
 
@@ -383,74 +205,23 @@
       <small>CONCEPT HEIGHT</small>
     </div>
 
-    <div class="metric metric-wide">
+    <div class="metric">
       <strong id="metricMode">AI <i>+</i></strong>
-      <small id="metricModeLabel">INTELLIGENT EDUCATION</small>
+      <small id="metricDescription">INTELLIGENT EDUCATION</small>
     </div>
-
   </div>
 
-  <!-- 三维视角控制 -->
-  <div class="view-controls">
-
-    <button
-      id="autoOrbit"
-      class="control-button on"
-      type="button"
-      aria-pressed="true">
-
-      <span class="control-dot"></span>
-      <span>自动环绕</span>
-      <b id="orbitState">ON</b>
-
-    </button>
-
-    <button
-      id="resetView"
-      class="control-button"
-      type="button">
-
-      ⌖ <span>复位视角</span>
-
-    </button>
-
+  <div class="bottom-center">
+    GREEN ENERGY <i>·</i> DIGITAL CAMPUS <i>·</i> INTELLIGENT FUTURE
   </div>
 
-  <!-- 粒子署名 -->
-  <section class="signature">
-
-    <div class="signature-kicker">
-      <span class="live-dot"></span>
-      CONCEPT BY · CLASS 01
-    </div>
-
-    <canvas
-      id="signatureParticles"
-      width="800"
-      height="220"
-      aria-label="商丘工学院未来概念校园粒子署名">
-    </canvas>
-
-    <div class="signature-bottom">
-      <span>商丘工学院</span>
-      <i></i>
-      <span>智建 1 班 · 李镇圳</span>
-    </div>
-
-  </section>
-
-  <!-- 交互反馈 -->
-  <div id="interactionToast"
-       class="interaction-toast"
-       role="status"
-       aria-live="polite">
-
-    粒子系统已启动
+  <div id="interactionToast" class="interaction-toast" role="status">
+    校园粒子系统已启动
   </div>
 
-  <!-- 错误提示 -->
   <div id="loadError" class="load-error" hidden></div>
 
+  <!-- 保留两个独立模块 -->
   <script type="module" src="./src/particle-text.js"></script>
   <script type="module" src="./src/main.js"></script>
 
