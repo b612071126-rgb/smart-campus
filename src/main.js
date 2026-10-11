@@ -1,1311 +1,2324 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+// ======================================================
+// 商丘工学院 · AI 未来概念校园
+// Three.js 粒子校园 / 实时交互版本
+// ======================================================
 
-/* =========================================================
-   SQIST FUTURE CAMPUS
-   Mobile-friendly particle campus
-   Modes: AI / Digital Twin / Green Energy / Smart Transport
-========================================================= */
+const stage = document.getElementById('stage');
+const loadError = document.getElementById('loadError');
 
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => [...document.querySelectorAll(s)];
-
-const stage = $("#stage");
-const errorBox = $("#loadError");
-
-if (!stage) {
-  throw new Error("找不到 #stage，请检查 index.html");
+function showError(message) {
+  if (loadError) {
+    loadError.hidden = false;
+    loadError.textContent = message;
+  }
 }
 
-const isMobile = matchMedia("(max-width: 760px)").matches;
+if (!stage) {
+  showError('没有找到三维场景容器 #stage，请检查 index.html。');
+  throw new Error('Missing #stage');
+}
 
-const CONFIG = {
-  // 手机端优先保证流畅度
-  buildingParticles: isMobile ? 22000 : 36000,
-  groundParticles: isMobile ? 7000 : 12000,
-  stars: isMobile ? 1000 : 1800,
-  pixelRatio: Math.min(devicePixelRatio || 1, isMobile ? 1.35 : 1.8)
-};
+let THREE;
 
-const MODES = {
-  ai: {
-    index: "01",
-    name: "AI 智慧教学",
-    metric: "AI",
-    detail: "INTELLIGENT EDUCATION",
-    color: new THREE.Color("#47dfff"),
-    secondary: new THREE.Color("#a1f5ff"),
-    background: new THREE.Color("#031226"),
-    message: "正在感知：教学空间与学习资源",
-    response: "数据流连接教学中心，智能节点正在响应",
-    speed: 1.35
-  },
+try {
+  THREE = await import(
+    'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'
+  );
+} catch (error) {
+  console.error('Three.js 加载失败：', error);
 
-  manage: {
-    index: "02",
-    name: "数字孪生",
-    metric: "TWIN",
-    detail: "DIGITAL TWIN",
-    color: new THREE.Color("#55caff"),
-    secondary: new THREE.Color("#9ae8ff"),
-    background: new THREE.Color("#041426"),
-    message: "正在扫描：校园建筑与空间结构",
-    response: "数字网格已启动，建筑空间正在实时映射",
-    speed: 0.8
-  },
+  showError(
+    'Three.js 加载失败。\n\n' +
+    '请检查网络连接，确认可以访问 jsdelivr.net，' +
+    '再刷新网页。\n\n' +
+    '具体错误：' +
+    (error?.message || '未知错误')
+  );
 
-  life: {
-    index: "03",
-    name: "智慧校园生活",
-    metric: "LIFE",
-    detail: "SMART CAMPUS LIFE",
-    color: new THREE.Color("#63dfdc"),
-    secondary: new THREE.Color("#b6fff0"),
-    background: new THREE.Color("#031b24"),
-    message: "正在连接：生活服务与校园空间",
-    response: "生活服务节点已连接，空间交互正在运行",
-    speed: 0.95
-  },
+  throw error;
+}
 
-  energy: {
-    index: "04",
-    name: "绿色能源网络",
-    metric: "GREEN",
-    detail: "GREEN ENERGY NETWORK",
-    color: new THREE.Color("#54ffb4"),
-    secondary: new THREE.Color("#b6ff9b"),
-    background: new THREE.Color("#031b19"),
-    message: "正在优化：校园能源与绿色网络",
-    response: "绿色能量流正在建筑与能源节点间传输",
-    speed: 1.15
-  },
-
-  transport: {
-    index: "05",
-    name: "智慧交通调度",
-    metric: "MOVE",
-    detail: "SMART TRANSPORT",
-    color: new THREE.Color("#ffd477"),
-    secondary: new THREE.Color("#fff0b1"),
-    background: new THREE.Color("#1b1420"),
-    message: "正在计算：校园交通与协同路径",
-    response: "路径网络已激活，交通节点正在协同调度",
-    speed: 1.45
-  }
-};
-
-let currentMode = "ai";
-let autoOrbit = true;
-let isDragging = false;
-let previousX = 0;
-let previousY = 0;
-let pointerMoved = false;
-let lastPointerTime = 0;
-let pulseStrength = 0;
-let scanStrength = 0;
-let targetRotationY = 0;
-let targetRotationX = -0.12;
-let toastTimer = 0;
-let frameCount = 0;
-let lastMetricTime = 0;
-let elapsed = 0;
+// ======================================================
+// 1. 场景初始化
+// ======================================================
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color("#031226");
-scene.fog = new THREE.FogExp2("#031226", 0.013);
 
-const camera = new THREE.PerspectiveCamera(
-  42,
-  innerWidth / innerHeight,
-  0.1,
-  400
+scene.background = new THREE.Color('#061426');
+
+scene.fog = new THREE.FogExp2(
+  '#061426',
+  0.0031
 );
 
-camera.position.set(0, 5.5, 20);
+const camera = new THREE.PerspectiveCamera(
+  45,
+  1,
+  0.1,
+  1200
+);
+
+camera.position.set(0, 64, 132);
+camera.lookAt(0, 12, 0);
 
 const renderer = new THREE.WebGLRenderer({
-  antialias: !isMobile,
+  antialias: true,
   alpha: false,
-  powerPreference: "high-performance"
+  powerPreference: 'high-performance'
 });
 
-renderer.setPixelRatio(CONFIG.pixelRatio);
-renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio || 1, 1.7)
+);
+
+renderer.setSize(
+  Math.max(stage.clientWidth, 1),
+  Math.max(stage.clientHeight, 1)
+);
+
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
 
 stage.appendChild(renderer.domElement);
 
-renderer.domElement.style.width = "100%";
-renderer.domElement.style.height = "100%";
-renderer.domElement.style.display = "block";
-renderer.domElement.style.touchAction = "pan-y";
+renderer.domElement.style.display = 'block';
+renderer.domElement.style.width = '100%';
+renderer.domElement.style.height = '100%';
+renderer.domElement.style.touchAction = 'none';
 
-const world = new THREE.Group();
-scene.add(world);
+// 基础光照
+scene.add(
+  new THREE.AmbientLight(0x7abaff, 1.6)
+);
 
-const buildingGroup = new THREE.Group();
-world.add(buildingGroup);
+const keyLight = new THREE.PointLight(
+  0x48d9ff,
+  1600,
+  380
+);
 
-const effectGroup = new THREE.Group();
-world.add(effectGroup);
-
-const groundGroup = new THREE.Group();
-world.add(groundGroup);
-
-const clock = new THREE.Clock();
-
-/* ------------------ Lighting ------------------ */
-
-scene.add(new THREE.AmbientLight("#477b9a", 0.55));
-
-const keyLight = new THREE.PointLight("#42cfff", 22, 45);
-keyLight.position.set(2, 10, 5);
+keyLight.position.set(0, 85, 30);
 scene.add(keyLight);
 
-const fillLight = new THREE.PointLight("#1676b8", 15, 40);
-fillLight.position.set(-10, 4, -5);
+const fillLight = new THREE.PointLight(
+  0x337cff,
+  1000,
+  340
+);
+
+fillLight.position.set(-65, 35, -25);
 scene.add(fillLight);
 
-/* ------------------ Helpers ------------------ */
+// 所有校园建筑统一放在一个组里
+const campus = new THREE.Group();
 
-function random(min, max) {
-  return min + Math.random() * (max - min);
-}
+scene.add(campus);
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+// 当前模式
+let currentMode = 'ai';
 
-function showToast(message) {
-  const toast = $("#interactionToast");
-  if (!toast) return;
+// 自动环绕
+let autoOrbitEnabled = true;
 
-  toast.textContent = message;
-  toast.classList.add("visible");
+// 当前相机轨道旋转
+let rotationY = 0;
+let targetRotationY = 0;
 
-  clearTimeout(toastTimer);
+let rotationX = -0.20;
+let targetRotationX = -0.20;
 
-  toastTimer = setTimeout(() => {
-    toast.classList.remove("visible");
-  }, 2300);
-}
+let zoom = 1;
+let targetZoom = 1;
 
-function createPoints(positions, colors, size = 0.035, opacity = 0.8) {
+// 粒子系统记录
+const clouds = [];
+const flowSystems = [];
+const animatedRings = [];
+const allConnections = [];
+
+let activeParticleCount = 0;
+
+// ======================================================
+// 2. 模式配置
+// ======================================================
+
+const MODES = {
+  ai: {
+    name: 'AI 智慧教学',
+    short: 'AI',
+    number: '01',
+    label: 'INTELLIGENT EDUCATION',
+    color: 0x6deaff,
+    cssColor: '#6deaff',
+
+    role: 'teaching',
+
+    status: '智慧教学系统已启动',
+
+    detail:
+      '教学建筑正在接入粒子数据网络。',
+
+    toast:
+      'AI 教学已启动 · 教学楼粒子正在响应'
+  },
+
+  manage: {
+    name: '数字孪生',
+    short: 'TWIN',
+    number: '02',
+    label: 'DIGITAL TWIN',
+
+    color: 0x8cbcff,
+    cssColor: '#8cbcff',
+
+    role: 'management',
+
+    status: '数字孪生正在扫描校园',
+
+    detail:
+      '建筑轮廓、楼层结构与场景粒子正在同步响应。',
+
+    toast:
+      '数字孪生已启动 · 建筑扫描与粒子脉冲已激活'
+  },
+
+  life: {
+    name: '智慧校园生活',
+    short: 'LIFE',
+    number: '03',
+    label: 'SMART CAMPUS LIFE',
+
+    color: 0x70e9ff,
+    cssColor: '#70e9ff',
+
+    role: 'life',
+
+    status: '校园生活空间已连接',
+
+    detail:
+      '揽月湖与校园公共空间正在产生联动波纹。',
+
+    toast:
+      '智慧生活已启动 · 湖面波纹与空间脉冲已激活'
+  },
+
+  energy: {
+    name: '绿色能源网络',
+    short: 'ENERGY',
+    number: '04',
+    label: 'GREEN ENERGY NETWORK',
+
+    color: 0x70ffd0,
+    cssColor: '#70ffd0',
+
+    role: 'energy',
+
+    status: '绿色能源网络已激活',
+
+    detail:
+      '绿色能量粒子正在校园建筑与能源路径之间传输。',
+
+    toast:
+      '绿色能源已启动 · 能量路径正在发光'
+  },
+
+  transport: {
+    name: '智慧交通调度',
+    short: 'MOVE',
+    number: '05',
+    label: 'INTELLIGENT TRANSPORT',
+
+    color: 0xffce83,
+    cssColor: '#ffce83',
+
+    role: 'transport',
+
+    status: '智慧交通系统已激活',
+
+    detail:
+      '道路光流正在环形校园路径中持续运动。',
+
+    toast:
+      '智慧交通已启动 · 校园道路光流已激活'
+  }
+};
+
+// ======================================================
+// 3. 粒子材质与建筑生成工具
+// ======================================================
+
+function addParticleCloud(
+  points,
+  color,
+  size,
+  opacity,
+  role = 'general',
+  options = {}
+) {
+  if (!points.length) return null;
+
+  const positions = new Float32Array(
+    points.length * 3
+  );
+
+  for (let i = 0; i < points.length; i++) {
+    positions[i * 3] = points[i].x;
+    positions[i * 3 + 1] = points[i].y;
+    positions[i * 3 + 2] = points[i].z;
+  }
+
   const geometry = new THREE.BufferGeometry();
 
   geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(positions, 3)
-  );
-
-  geometry.setAttribute(
-    "color",
-    new THREE.Float32BufferAttribute(colors, 3)
+    'position',
+    new THREE.BufferAttribute(positions, 3)
   );
 
   const material = new THREE.PointsMaterial({
+    color,
     size,
-    vertexColors: true,
     transparent: true,
     opacity,
-    depthWrite: false,
+
     blending: THREE.AdditiveBlending,
+
+    depthWrite: false,
     sizeAttenuation: true
   });
 
-  const points = new THREE.Points(geometry, material);
+  const pointsObject = new THREE.Points(
+    geometry,
+    material
+  );
 
-  points.frustumCulled = false;
+  pointsObject.frustumCulled = false;
 
-  return points;
+  campus.add(pointsObject);
+
+  const basePositions = positions.slice();
+
+  pointsObject.userData = {
+    role,
+    basePositions,
+    originalColor: color,
+    originalOpacity: opacity,
+    originalSize: size,
+
+    phase: Math.random() * Math.PI * 2,
+
+    waveStrength: options.waveStrength ?? 0.10
+  };
+
+  clouds.push(pointsObject);
+
+  activeParticleCount += points.length;
+
+  return pointsObject;
 }
 
-function addLine(points, color, opacity = 0.35) {
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-  const material = new THREE.LineBasicMaterial({
-    color,
-    transparent: true,
-    opacity,
-    depthWrite: false
-  });
-
-  const line = new THREE.Line(geometry, material);
-
-  effectGroup.add(line);
-
-  return line;
-}
-
-/* ------------------ Campus buildings ------------------ */
-
-const buildings = [];
-
-function addBuilding({
-  x,
-  z,
-  width,
-  depth,
-  height,
-  name,
-  type = "box"
-}) {
-  const group = new THREE.Group();
-
-  group.position.set(x, 0, z);
-  buildingGroup.add(group);
-
-  const positions = [];
-  const colors = [];
-  const count = Math.max(
-    900,
-    Math.floor(
-      CONFIG.buildingParticles *
-      (width * depth * height) /
-      10000
-    )
-  );
-
-  const baseColor = new THREE.Color("#174e70");
-  const brightColor = new THREE.Color("#67dcff");
-
-  function addParticle(px, py, pz, edge = false) {
-    positions.push(px, py, pz);
-
-    let color;
-
-    if (edge) {
-      color = brightColor.clone().multiplyScalar(random(0.55, 1.0));
-    } else {
-      color = baseColor.clone().lerp(
-        brightColor,
-        Math.pow(Math.random(), 2) * 0.55
-      );
-    }
-
-    colors.push(color.r, color.g, color.b);
-  }
-
-  if (type === "tower") {
-    // 中央塔楼：锥形粒子结构
-    for (let i = 0; i < count; i++) {
-      const y = random(0, height);
-      const t = y / height;
-      const radius = width * (0.46 - t * 0.29);
-
-      const angle = random(0, Math.PI * 2);
-      const r = radius * Math.sqrt(Math.random());
-
-      const px = Math.cos(angle) * r;
-      const pz = Math.sin(angle) * r;
-
-      const nearEdge = Math.random() < 0.23;
-
-      addParticle(px, y, pz, nearEdge);
-    }
-
-    // 塔楼水平结构环
-    for (let y = 0.25; y < height; y += 0.22) {
-      const t = y / height;
-      const radius = width * (0.46 - t * 0.29);
-
-      const ringPoints = [];
-
-      for (let i = 0; i <= 100; i++) {
-        const angle = i / 100 * Math.PI * 2;
-
-        ringPoints.push(
-          new THREE.Vector3(
-            Math.cos(angle) * radius,
-            y,
-            Math.sin(angle) * radius
-          )
-        );
-      }
-
-      const ring = new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(ringPoints),
-        new THREE.LineBasicMaterial({
-          color: "#45d8ff",
-          transparent: true,
-          opacity: 0.38,
-          depthWrite: false
-        })
-      );
-
-      group.add(ring);
-    }
-
-  } else {
-    // 周边建筑：优先分布在六个表面
-    // 避免大量填满内部而形成纯白实体
-
-    const faceCount = Math.floor(count * 0.83);
-
-    for (let i = 0; i < faceCount; i++) {
-      const face = Math.floor(Math.random() * 6);
-
-      const px = random(-width / 2, width / 2);
-      const py = random(0.05, height);
-      const pz = random(-depth / 2, depth / 2);
-
-      let fx = px;
-      let fy = py;
-      let fz = pz;
-
-      switch (face) {
-        case 0:
-          fx = width / 2;
-          break;
-        case 1:
-          fx = -width / 2;
-          break;
-        case 2:
-          fz = depth / 2;
-          break;
-        case 3:
-          fz = -depth / 2;
-          break;
-        case 4:
-          fy = height;
-          break;
-        case 5:
-          fy = 0.05;
-          break;
-      }
-
-      const isEdge =
-        Math.abs(fx) > width * 0.46 ||
-        Math.abs(fz) > depth * 0.46 ||
-        fy > height * 0.94;
-
-      addParticle(fx, fy, fz, isEdge && Math.random() < 0.65);
-    }
-
-    // 稀疏的内部结构点
-    for (let i = faceCount; i < count; i++) {
-      addParticle(
-        random(-width * 0.42, width * 0.42),
-        random(0.05, height),
-        random(-depth * 0.42, depth * 0.42),
-        false
-      );
-    }
-
-    // 建筑竖向轮廓
-    const corners = [
-      [-width / 2, -depth / 2],
-      [width / 2, -depth / 2],
-      [width / 2, depth / 2],
-      [-width / 2, depth / 2]
-    ];
-
-    for (const [cx, cz] of corners) {
-      addLine(
-        [
-          new THREE.Vector3(cx, 0, cz),
-          new THREE.Vector3(cx, height, cz)
-        ],
-        "#54dfff",
-        0.48
-      );
-    }
-
-    // 顶部轮廓
-    const top = corners.map(
-      ([cx, cz]) => new THREE.Vector3(cx, height, cz)
-    );
-
-    top.push(top[0].clone());
-
-    addLine(top, "#71e7ff", 0.62);
-  }
-
-  const points = createPoints(
-    positions,
-    colors,
-    type === "tower" ? 0.037 : 0.029,
-    0.73
-  );
-
-  group.add(points);
-
-  // 底部发光轮廓
-  const baseShape = new THREE.Shape();
-
-  baseShape.moveTo(-width / 2, -depth / 2);
-  baseShape.lineTo(width / 2, -depth / 2);
-  baseShape.lineTo(width / 2, depth / 2);
-  baseShape.lineTo(-width / 2, depth / 2);
-  baseShape.closePath();
-
-  const baseGeometry = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(-width / 2, 0.06, -depth / 2),
-    new THREE.Vector3(width / 2, 0.06, -depth / 2),
-    new THREE.Vector3(width / 2, 0.06, depth / 2),
-    new THREE.Vector3(-width / 2, 0.06, depth / 2),
-    new THREE.Vector3(-width / 2, 0.06, -depth / 2)
-  ]);
-
-  const baseLine = new THREE.Line(
-    baseGeometry,
-    new THREE.LineBasicMaterial({
-      color: "#3cbbec",
-      transparent: true,
-      opacity: 0.45,
-      depthWrite: false
-    })
-  );
-
-  group.add(baseLine);
-
-  const building = {
-    group,
-    points,
-    name,
+// 生成建筑表面粒子
+function createBuilding(options) {
+  const {
     x,
     z,
     width,
     depth,
     height,
-    baseOpacity: 0.73,
-    baseColor,
-    type
-  };
+    color,
+    role = 'general',
+    density = 1
+  } = options;
 
-  buildings.push(building);
+  const points = [];
 
-  return building;
-}
+  const left = x - width / 2;
+  const right = x + width / 2;
 
-/* ------------------ Layout ------------------ */
+  const front = z - depth / 2;
+  const back = z + depth / 2;
 
-// 中央塔楼
-addBuilding({
-  x: 0,
-  z: 0,
-  width: 3.4,
-  depth: 3.4,
-  height: 10.5,
-  name: "AI 智慧教学中心",
-  type: "tower"
-});
+  // --------------------------------------------------
+  // 建筑四条竖向外轮廓
+  // --------------------------------------------------
 
-// 周边建筑
-addBuilding({
-  x: -5.4,
-  z: 0.3,
-  width: 4.2,
-  depth: 3.7,
-  height: 4.8,
-  name: "西侧教学楼"
-});
+  const corners = [
+    [left, front],
+    [right, front],
+    [right, back],
+    [left, back]
+  ];
 
-addBuilding({
-  x: 5.3,
-  z: 0.2,
-  width: 4.1,
-  depth: 3.6,
-  height: 4.3,
-  name: "东侧教学楼"
-});
+  for (const [cx, cz] of corners) {
+    for (let y = 0; y <= height; y += 0.65) {
+      points.push({
+        x: cx,
+        y,
+        z: cz
+      });
+    }
+  }
 
-addBuilding({
-  x: -4.2,
-  z: -5.0,
-  width: 3.8,
-  depth: 3.5,
-  height: 5.5,
-  name: "实验教学中心"
-});
+  // --------------------------------------------------
+  // 建筑立面网格与窗格
+  // --------------------------------------------------
 
-addBuilding({
-  x: 4.4,
-  z: -5.0,
-  width: 4.0,
-  depth: 3.4,
-  height: 4.9,
-  name: "智慧科研中心"
-});
-
-addBuilding({
-  x: -6.0,
-  z: 5.0,
-  width: 3.7,
-  depth: 3.2,
-  height: 3.5,
-  name: "校园服务中心"
-});
-
-addBuilding({
-  x: 5.9,
-  z: 5.0,
-  width: 3.8,
-  depth: 3.2,
-  height: 3.7,
-  name: "综合管理中心"
-});
-
-/* ------------------ Ground particle field ------------------ */
-
-const groundPositions = [];
-const groundColors = [];
-
-for (let i = 0; i < CONFIG.groundParticles; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const radius = Math.sqrt(Math.random()) * 12.5;
-
-  const x = Math.cos(angle) * radius;
-  const z = Math.sin(angle) * radius;
-  const y = random(-0.12, 0.12);
-
-  groundPositions.push(x, y, z);
-
-  const c = new THREE.Color("#2375a8").lerp(
-    new THREE.Color("#71eaff"),
-    Math.random() * 0.35
+  const horizontalStep = Math.max(
+    0.9,
+    1.5 / density
   );
 
-  groundColors.push(c.r, c.g, c.b);
-}
-
-const groundPoints = createPoints(
-  groundPositions,
-  groundColors,
-  0.028,
-  0.58
-);
-
-groundGroup.add(groundPoints);
-
-/* ------------------ Ground rings ------------------ */
-
-const groundRings = [];
-
-for (let i = 0; i < 5; i++) {
-  const radius = 3.1 + i * 2.05;
-
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(radius - 0.012, radius + 0.012, 160),
-    new THREE.MeshBasicMaterial({
-      color: "#37c8f6",
-      transparent: true,
-      opacity: 0.24 - i * 0.025,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    })
+  const verticalStep = Math.max(
+    0.85,
+    1.35 / density
   );
 
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.015 + i * 0.003;
+  // 前后立面
+  for (
+    let px = left;
+    px <= right;
+    px += horizontalStep
+  ) {
+    for (
+      let py = 0;
+      py <= height;
+      py += verticalStep
+    ) {
+      points.push({
+        x: px,
+        y: py,
+        z: front
+      });
 
-  groundGroup.add(ring);
-  groundRings.push(ring);
-}
+      points.push({
+        x: px,
+        y: py,
+        z: back
+      });
+    }
+  }
 
-/* ------------------ Data links ------------------ */
+  // 左右立面
+  for (
+    let pz = front;
+    pz <= back;
+    pz += horizontalStep
+  ) {
+    for (
+      let py = 0;
+      py <= height;
+      py += verticalStep
+    ) {
+      points.push({
+        x: left,
+        y: py,
+        z: pz
+      });
 
-const dataLinks = [];
+      points.push({
+        x: right,
+        y: py,
+        z: pz
+      });
+    }
+  }
 
-function createDataLink(a, b) {
-  const geometry = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(a.x, 0.2, a.z),
-    new THREE.Vector3(0, 4.8, 0),
-    new THREE.Vector3(b.x, 0.2, b.z)
-  ]);
+  // --------------------------------------------------
+  // 每层楼的环形横向结构
+  // --------------------------------------------------
 
-  const material = new THREE.LineBasicMaterial({
-    color: "#44d8ff",
-    transparent: true,
-    opacity: 0.25,
-    depthWrite: false
-  });
+  for (
+    let y = 2.2;
+    y < height;
+    y += 3.2
+  ) {
+    for (
+      let px = left;
+      px <= right;
+      px += 0.62
+    ) {
+      points.push({
+        x: px,
+        y,
+        z: front
+      });
 
-  const line = new THREE.Line(geometry, material);
+      points.push({
+        x: px,
+        y,
+        z: back
+      });
+    }
 
-  effectGroup.add(line);
-  dataLinks.push(line);
-}
+    for (
+      let pz = front;
+      pz <= back;
+      pz += 0.62
+    ) {
+      points.push({
+        x: left,
+        y,
+        z: pz
+      });
 
-for (let i = 1; i < buildings.length; i++) {
-  createDataLink(buildings[0], buildings[i]);
-}
+      points.push({
+        x: right,
+        y,
+        z: pz
+      });
+    }
+  }
 
-/* ------------------ Moving data particles ------------------ */
+  // --------------------------------------------------
+  // 密集立面内部粒子
+  // --------------------------------------------------
 
-const dataParticles = [];
-const dataMaterial = new THREE.MeshBasicMaterial({
-  color: "#79edff"
-});
-
-const dataGeometry = new THREE.SphereGeometry(0.055, 6, 6);
-
-for (let i = 0; i < 22; i++) {
-  const dot = new THREE.Mesh(dataGeometry, dataMaterial);
-
-  dot.userData = {
-    path: Math.floor(Math.random() * dataLinks.length),
-    progress: Math.random(),
-    speed: random(0.15, 0.48)
-  };
-
-  effectGroup.add(dot);
-  dataParticles.push(dot);
-}
-
-/* ------------------ Scanning wave ------------------ */
-
-const scanRing = new THREE.Mesh(
-  new THREE.RingGeometry(0.15, 0.23, 128),
-  new THREE.MeshBasicMaterial({
-    color: "#79f2ff",
-    transparent: true,
-    opacity: 0.9,
-    side: THREE.DoubleSide,
-    depthWrite: false
-  })
-);
-
-scanRing.rotation.x = -Math.PI / 2;
-scanRing.position.y = 0.12;
-scanRing.visible = false;
-
-effectGroup.add(scanRing);
-
-/* ------------------ Star field ------------------ */
-
-const starPositions = [];
-const starColors = [];
-
-for (let i = 0; i < CONFIG.stars; i++) {
-  starPositions.push(
-    random(-36, 36),
-    random(0, 26),
-    random(-36, 20)
+  const surfaceCount = Math.floor(
+    width * depth * height * 1.25 * density
   );
 
-  const c = new THREE.Color("#72bfff").multiplyScalar(
-    random(0.3, 0.85)
-  );
-
-  starColors.push(c.r, c.g, c.b);
-}
-
-const stars = createPoints(
-  starPositions,
-  starColors,
-  0.045,
-  0.72
-);
-
-scene.add(stars);
-
-/* ------------------ Interaction pulse ------------------ */
-
-const pulseRings = [];
-
-function triggerPulse(x = 0, z = 0) {
-  for (let i = 0; i < 3; i++) {
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.15, 0.23, 96),
-      new THREE.MeshBasicMaterial({
-        color: MODES[currentMode].color,
-        transparent: true,
-        opacity: 0.95,
-        side: THREE.DoubleSide,
-        depthWrite: false
-      })
+  for (let i = 0; i < surfaceCount; i++) {
+    const side = Math.floor(
+      Math.random() * 4
     );
 
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.set(x, 0.2 + i * 0.015, z);
+    let px;
+    let pz;
 
-    ring.userData = {
-      scale: 1,
-      speed: 2.2 + i * 0.75,
-      life: 1
-    };
+    if (side === 0) {
+      px = left + Math.random() * width;
+      pz = front;
+    } else if (side === 1) {
+      px = left + Math.random() * width;
+      pz = back;
+    } else if (side === 2) {
+      px = left;
+      pz = front + Math.random() * depth;
+    } else {
+      px = right;
+      pz = front + Math.random() * depth;
+    }
 
-    effectGroup.add(ring);
-    pulseRings.push(ring);
+    const py = Math.random() * height;
+
+    points.push({
+      x: px,
+      y: py,
+      z: pz
+    });
   }
 
-  pulseStrength = 1;
+  // --------------------------------------------------
+  // 顶部轮廓与屋顶粒子
+  // --------------------------------------------------
+
+  for (
+    let px = left;
+    px <= right;
+    px += 0.5
+  ) {
+    points.push({
+      x: px,
+      y: height,
+      z: front
+    });
+
+    points.push({
+      x: px,
+      y: height,
+      z: back
+    });
+  }
+
+  for (
+    let pz = front;
+    pz <= back;
+    pz += 0.5
+  ) {
+    points.push({
+      x: left,
+      y: height,
+      z: pz
+    });
+
+    points.push({
+      x: right,
+      y: height,
+      z: pz
+    });
+  }
+
+  // 屋顶散布粒子
+  const roofCount = Math.floor(
+    width * depth * 1.5
+  );
+
+  for (let i = 0; i < roofCount; i++) {
+    points.push({
+      x: left + Math.random() * width,
+      y: height + Math.random() * 0.35,
+      z: front + Math.random() * depth
+    });
+  }
+
+  const cloud = addParticleCloud(
+    points,
+    color,
+    0.78,
+    0.88,
+    role,
+    {
+      waveStrength: 0.10
+    }
+  );
+
+  return cloud;
 }
 
-/* ------------------ Mode switching ------------------ */
+// ======================================================
+// 4. 环形粒子道路
+// ======================================================
 
-function updateModeUI(mode) {
-  const config = MODES[mode];
-  if (!config) return;
+function createRingParticles(
+  radius,
+  count,
+  color,
+  role = 'general',
+  options = {}
+) {
+  const points = [];
 
-  $$("[data-mode]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.mode === mode);
-  });
+  const verticalRadius = options.verticalRadius ?? 0.6;
 
-  const metricMode = $("#metricMode");
+  for (let i = 0; i < count; i++) {
+    const angle =
+      Math.random() * Math.PI * 2;
 
-  if (metricMode) {
-    metricMode.innerHTML =
-      `${config.metric} <i>+</i>`;
+    const r =
+      radius + (Math.random() - 0.5) * 0.7;
+
+    points.push({
+      x: Math.cos(angle) * r,
+      y: (Math.random() - 0.5) * verticalRadius,
+      z: Math.sin(angle) * r
+    });
   }
 
-  const status = $("#globalStatus");
-
-  if (status) {
-    status.textContent = "SMART CAMPUS DIGITAL TWIN";
-  }
-
-  const responseText = $("#responseText");
-
-  if (responseText) {
-    responseText.textContent = config.message;
-  }
-
-  const responseDetail = $("#responseDetail");
-
-  if (responseDetail) {
-    responseDetail.textContent = config.response;
-  }
-
-  const steps = $$(".cycle-step");
-
-  steps.forEach((step, index) => {
-    step.classList.toggle("current", index === 0);
-  });
-
-  showToast(`${config.name} · 场景已切换`);
+  return addParticleCloud(
+    points,
+    color,
+    options.size ?? 0.65,
+    options.opacity ?? 0.8,
+    role
+  );
 }
 
-function setMode(mode) {
+// 地面网格粒子
+function createGround() {
+  const points = [];
+
+  for (
+    let x = -100;
+    x <= 100;
+    x += 2.8
+  ) {
+    for (
+      let z = -100;
+      z <= 100;
+      z += 2.8
+    ) {
+      if (Math.random() > 0.42) continue;
+
+      points.push({
+        x,
+        y: -0.22,
+        z
+      });
+    }
+  }
+
+  addParticleCloud(
+    points,
+    0x28639b,
+    0.38,
+    0.45,
+    'general'
+  );
+}
+
+createGround();
+
+// 三条大型环形道路
+createRingParticles(
+  64,
+  2100,
+  0x269fe0,
+  'transport',
+  {
+    size: 0.70,
+    opacity: 0.78
+  }
+);
+
+createRingParticles(
+  48,
+  1700,
+  0x367fff,
+  'transport',
+  {
+    size: 0.65,
+    opacity: 0.72
+  }
+);
+
+createRingParticles(
+  30,
+  1200,
+  0x46d5ff,
+  'transport',
+  {
+    size: 0.65,
+    opacity: 0.75
+  }
+);
+
+// ======================================================
+// 5. 校园建筑
+// ======================================================
+
+// 左侧教学楼群
+createBuilding({
+  x: -35,
+  z: -14,
+  width: 24,
+  depth: 16,
+  height: 24,
+  color: 0x66d8ff,
+  role: 'teaching',
+  density: 1.1
+});
+
+createBuilding({
+  x: -35,
+  z: 8,
+  width: 24,
+  depth: 17,
+  height: 31,
+  color: 0x47bfff,
+  role: 'teaching',
+  density: 1.1
+});
+
+// 右侧教学楼群
+createBuilding({
+  x: 35,
+  z: -13,
+  width: 24,
+  depth: 17,
+  height: 28,
+  color: 0x62d8ff,
+  role: 'teaching',
+  density: 1.1
+});
+
+createBuilding({
+  x: 35,
+  z: 10,
+  width: 24,
+  depth: 17,
+  height: 23,
+  color: 0x42acff,
+  role: 'teaching',
+  density: 1.1
+});
+
+// 后方科研建筑
+createBuilding({
+  x: -17,
+  z: -40,
+  width: 23,
+  depth: 15,
+  height: 21,
+  color: 0x49c5ff,
+  role: 'management',
+  density: 1.0
+});
+
+createBuilding({
+  x: 17,
+  z: -40,
+  width: 23,
+  depth: 15,
+  height: 25,
+  color: 0x57bfff,
+  role: 'management',
+  density: 1.0
+});
+
+// 两侧低层公共建筑
+createBuilding({
+  x: -57,
+  z: 8,
+  width: 12,
+  depth: 22,
+  height: 13,
+  color: 0x389aff,
+  role: 'life',
+  density: 1.0
+});
+
+createBuilding({
+  x: 57,
+  z: 8,
+  width: 12,
+  depth: 22,
+  height: 15,
+  color: 0x4baeff,
+  role: 'life',
+  density: 1.0
+});
+
+// ======================================================
+// 6. 中央高塔
+// ======================================================
+
+function createCentralTower() {
+  const points = [];
+
+  const height = 53;
+
+  // 塔身环形层
+  for (
+    let y = 0;
+    y <= height;
+    y += 0.48
+  ) {
+    const radius =
+      8.2 - (y / height) * 4.9;
+
+    const count = 110;
+
+    for (let i = 0; i < count; i++) {
+      const a =
+        (i / count) * Math.PI * 2;
+
+      points.push({
+        x: Math.cos(a) * radius,
+        y,
+        z: Math.sin(a) * radius
+      });
+    }
+  }
+
+  // 塔身连续螺旋
+  for (let i = 0; i < 4400; i++) {
+    const t = i / 4400;
+
+    const y = t * height;
+
+    const radius =
+      8.2 - t * 4.9;
+
+    const a =
+      t * Math.PI * 26;
+
+    points.push({
+      x: Math.cos(a) * radius,
+      y,
+      z: Math.sin(a) * radius
+    });
+  }
+
+  // 塔顶光点
+  for (let i = 0; i < 420; i++) {
+    const a =
+      Math.random() * Math.PI * 2;
+
+    const r = Math.random() * 3.8;
+
+    points.push({
+      x: Math.cos(a) * r,
+      y: height + Math.random() * 9,
+      z: Math.sin(a) * r
+    });
+  }
+
+  addParticleCloud(
+    points,
+    0x9aeeff,
+    0.90,
+    0.98,
+    'teaching',
+    {
+      waveStrength: 0.12
+    }
+  );
+}
+
+createCentralTower();
+
+// ======================================================
+// 7. 揽月湖
+// ======================================================
+
+function createLake() {
+  const points = [];
+
+  const lakeX = 3;
+  const lakeZ = 25;
+
+  const lakeWidth = 37;
+  const lakeDepth = 23;
+
+  for (let i = 0; i < 4200; i++) {
+    const angle =
+      Math.random() * Math.PI * 2;
+
+    const r = Math.sqrt(
+      Math.random()
+    );
+
+    const x =
+      Math.cos(angle) * r * lakeWidth;
+
+    const z =
+      Math.sin(angle) * r * lakeDepth;
+
+    points.push({
+      x: lakeX + x,
+      y: 0.22 + Math.random() * 0.3,
+      z: lakeZ + z
+    });
+  }
+
+  addParticleCloud(
+    points,
+    0x2bafff,
+    0.65,
+    0.70,
+    'life',
+    {
+      waveStrength: 0.15
+    }
+  );
+
+  // 水面环形波纹
+  for (let ring = 0; ring < 5; ring++) {
+    const ringPoints = [];
+
+    const radius = 3.0 + ring * 2.8;
+
+    for (let i = 0; i < 160; i++) {
+      const a =
+        (i / 160) * Math.PI * 2;
+
+      ringPoints.push({
+        x: lakeX + Math.cos(a) * radius,
+        y: 0.62,
+        z: lakeZ + Math.sin(a) * radius * 0.72
+      });
+    }
+
+    const cloud = addParticleCloud(
+      ringPoints,
+      0x75eaff,
+      0.78,
+      0.8,
+      'life'
+    );
+
+    if (cloud) {
+      animatedRings.push({
+        cloud,
+        base: cloud.userData.basePositions.slice(),
+        phase: ring * 0.7
+      });
+    }
+  }
+}
+
+createLake();
+
+// ======================================================
+// 8. 网络连接线
+// ======================================================
+
+// 用大量线段粒子表现建筑之间的连接
+function createConnection(
+  start,
+  end,
+  role,
+  color
+) {
+  const points = [];
+
+  const distance = Math.hypot(
+    end.x - start.x,
+    end.y - start.y,
+    end.z - start.z
+  );
+
+  const count = Math.max(
+    60,
+    Math.floor(distance * 12)
+  );
+
+  for (let i = 0; i <= count; i++) {
+    const t = i / count;
+
+    const arc =
+      Math.sin(t * Math.PI) * 2.8;
+
+    points.push({
+      x: start.x + (end.x - start.x) * t,
+      y: start.y + (end.y - start.y) * t + arc,
+      z: start.z + (end.z - start.z) * t
+    });
+  }
+
+  const cloud = addParticleCloud(
+    points,
+    color,
+    0.54,
+    0.58,
+    role,
+    {
+      waveStrength: 0.02
+    }
+  );
+
+  if (cloud) {
+    allConnections.push({
+      cloud,
+      role
+    });
+  }
+}
+
+// 高塔连接教学楼
+createConnection(
+  { x: 0, y: 24, z: 0 },
+  { x: -35, y: 15, z: -14 },
+  'teaching',
+  0x56dfff
+);
+
+createConnection(
+  { x: 0, y: 26, z: 0 },
+  { x: 35, y: 14, z: -13 },
+  'teaching',
+  0x56dfff
+);
+
+createConnection(
+  { x: 0, y: 20, z: 0 },
+  { x: -17, y: 14, z: -40 },
+  'management',
+  0x78b9ff
+);
+
+createConnection(
+  { x: 0, y: 20, z: 0 },
+  { x: 17, y: 15, z: -40 },
+  'management',
+  0x78b9ff
+);
+
+// 建筑与能源网络连接
+createConnection(
+  { x: -35, y: 10, z: 5 },
+  { x: 3, y: 2, z: 25 },
+  'energy',
+  0x76ffd5
+);
+
+createConnection(
+  { x: 35, y: 10, z: 5 },
+  { x: 3, y: 2, z: 25 },
+  'energy',
+  0x76ffd5
+);
+
+// ======================================================
+// 9. 道路能量流：沿路径运动的粒子
+// ======================================================
+
+function createFlowPath(
+  points,
+  role,
+  color,
+  count = 100
+) {
+  const geometry = new THREE.BufferGeometry();
+
+  const positions = new Float32Array(
+    count * 3
+  );
+
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(
+      positions,
+      3
+    )
+  );
+
+  const material = new THREE.PointsMaterial({
+    color,
+    size: 1.25,
+    transparent: true,
+    opacity: 0.95,
+
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  const flow = new THREE.Points(
+    geometry,
+    material
+  );
+
+  flow.frustumCulled = false;
+
+  campus.add(flow);
+
+  flowSystems.push({
+    flow,
+    points,
+    role,
+    count,
+    speed: 0.19 + Math.random() * 0.13,
+    offset: Math.random()
+  });
+
+  activeParticleCount += count;
+
+  return flow;
+}
+
+function makeCircularPath(radius, count, y = 0.8) {
+  const points = [];
+
+  for (let i = 0; i < count; i++) {
+    const a = i / count * Math.PI * 2;
+
+    points.push({
+      x: Math.cos(a) * radius,
+      y,
+      z: Math.sin(a) * radius
+    });
+  }
+
+  return points;
+}
+
+createFlowPath(
+  makeCircularPath(64, 1000, 0.9),
+  'transport',
+  0xffcf83,
+  110
+);
+
+createFlowPath(
+  makeCircularPath(48, 1000, 0.95),
+  'transport',
+  0xffe2aa,
+  90
+);
+
+createFlowPath(
+  [
+    { x: 0, y: 3, z: 0 },
+    { x: -17, y: 3, z: -40 },
+    { x: -35, y: 3, z: -14 },
+    { x: 0, y: 3, z: 0 },
+    { x: 35, y: 3, z: -13 },
+    { x: 17, y: 3, z: -40 }
+  ],
+  'energy',
+  0x6dffd0,
+  90
+);
+
+createFlowPath(
+  [
+    { x: -35, y: 8, z: 8 },
+    { x: -20, y: 6, z: 8 },
+    { x: 0, y: 5, z: 0 },
+    { x: 20, y: 6, z: 8 },
+    { x: 35, y: 8, z: 8 }
+  ],
+  'teaching',
+  0x8aecff,
+  80
+);
+
+// ======================================================
+// 10. 漂浮星尘
+// ======================================================
+
+const stars = [];
+
+for (let i = 0; i < 1800; i++) {
+  stars.push({
+    x: (Math.random() - 0.5) * 240,
+    y: Math.random() * 90 + 4,
+    z: (Math.random() - 0.5) * 240
+  });
+}
+
+const starPositions = new Float32Array(
+  stars.length * 3
+);
+
+stars.forEach((p, i) => {
+  starPositions[i * 3] = p.x;
+  starPositions[i * 3 + 1] = p.y;
+  starPositions[i * 3 + 2] = p.z;
+});
+
+const starGeometry = new THREE.BufferGeometry();
+
+starGeometry.setAttribute(
+  'position',
+  new THREE.BufferAttribute(
+    starPositions,
+    3
+  )
+);
+
+const starMaterial = new THREE.PointsMaterial({
+  color: 0x5b9ed9,
+  size: 0.48,
+  transparent: true,
+  opacity: 0.65,
+  depthWrite: false,
+
+  blending: THREE.AdditiveBlending
+});
+
+const starField = new THREE.Points(
+  starGeometry,
+  starMaterial
+);
+
+starField.frustumCulled = false;
+
+scene.add(starField);
+
+// ======================================================
+// 11. 点击扩散波
+// ======================================================
+
+const pulseSystems = [];
+
+function createPulse(position) {
+  const geometry = new THREE.BufferGeometry();
+
+  const count = 240;
+
+  const positions = new Float32Array(
+    count * 3
+  );
+
+  const angles = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    angles[i] =
+      (i / count) * Math.PI * 2;
+
+    positions[i * 3] =
+      position.x + Math.cos(angles[i]) * 0.1;
+
+    positions[i * 3 + 1] =
+      position.y + 0.3;
+
+    positions[i * 3 + 2] =
+      position.z + Math.sin(angles[i]) * 0.1;
+  }
+
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(
+      positions,
+      3
+    )
+  );
+
+  const material = new THREE.PointsMaterial({
+    color: MODES[currentMode].color,
+    size: 1.05,
+    transparent: true,
+    opacity: 1,
+
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  const ring = new THREE.Points(
+    geometry,
+    material
+  );
+
+  ring.frustumCulled = false;
+
+  campus.add(ring);
+
+  pulseSystems.push({
+    ring,
+    geometry,
+    angles,
+    position: position.clone(),
+    age: 0,
+    duration: 1.5
+  });
+}
+
+// ======================================================
+// 12. 模式切换：控制真实粒子
+// ======================================================
+
+const modeMetricText = document.getElementById('metricMode');
+const modeMetricLabel = document.getElementById('metricModeLabel');
+
+const modeTitleElement = document.getElementById('modeTitle');
+const modeEyebrowElement = document.getElementById('modeEyebrow');
+
+const responseText = document.getElementById('responseText');
+const responseDetail = document.getElementById('responseDetail');
+
+const responseProgressBar =
+  document.getElementById('responseProgressBar');
+
+const responsePercent =
+  document.getElementById('responsePercent');
+
+const globalStatus = document.getElementById('globalStatus');
+
+let modeChangeTime = 0;
+
+function isHighlightedRole(role, mode) {
+  if (mode === 'manage') {
+    return [
+      'teaching',
+      'management',
+      'life',
+      'energy',
+      'transport',
+      'general'
+    ].includes(role);
+  }
+
+  if (mode === 'ai') {
+    return [
+      'teaching',
+      'general'
+    ].includes(role);
+  }
+
+  if (mode === 'life') {
+    return [
+      'life',
+      'general'
+    ].includes(role);
+  }
+
+  if (mode === 'energy') {
+    return [
+      'energy',
+      'general'
+    ].includes(role);
+  }
+
+  if (mode === 'transport') {
+    return [
+      'transport',
+      'general'
+    ].includes(role);
+  }
+
+  return true;
+}
+
+function switchMode(mode) {
   if (!MODES[mode]) return;
 
   currentMode = mode;
+  modeChangeTime = clock.getElapsedTime();
 
   const config = MODES[mode];
 
-  updateModeUI(mode);
+  // 同步左右面板的所有按钮
+  document.querySelectorAll('[data-mode]').forEach(button => {
+    const isActive =
+      button.dataset.mode === mode;
 
-  scene.background.lerp(config.background, 0.8);
-  scene.fog.color.copy(config.background);
+    button.classList.toggle(
+      'active',
+      isActive
+    );
 
-  scanStrength = 1;
+    button.setAttribute(
+      'aria-pressed',
+      String(isActive)
+    );
+  });
 
-  triggerPulse(0, 0);
+  // 当前模式标题
+  if (modeTitleElement) {
+    modeTitleElement.textContent =
+      config.name;
+  }
 
-  buildings.forEach((building, index) => {
-    const color = config.color.clone();
+  if (modeEyebrowElement) {
+    modeEyebrowElement.textContent =
+      `CAMPUS MODE / ${config.number}`;
+  }
 
-    building.points.material.color.set("#ffffff");
+  if (modeMetricText) {
+    modeMetricText.textContent =
+      config.short;
+  }
 
-    const attr = building.points.geometry.getAttribute("color");
+  if (modeMetricLabel) {
+    modeMetricLabel.textContent =
+      config.label;
+  }
 
-    const base = building.baseColor;
+  if (responseText) {
+    responseText.textContent =
+      config.status;
+  }
 
-    for (let i = 0; i < attr.count; i++) {
-      const r = attr.getX(i);
-      const g = attr.getY(i);
-      const b = attr.getZ(i);
+  if (responseDetail) {
+    responseDetail.textContent =
+      config.detail;
+  }
 
-      const original = new THREE.Color(r, g, b);
+  if (globalStatus) {
+    globalStatus.textContent =
+      config.label;
+  }
 
-      // 模式变化主要改变色相，不再把粒子全部变成白色
-      const mixed = original
-        .lerp(color, mode === "energy" ? 0.62 : 0.38);
+  if (responseProgressBar) {
+    responseProgressBar.style.width =
+      '100%';
+  }
 
-      attr.setXYZ(i, mixed.r, mixed.g, mixed.b);
+  if (responsePercent) {
+    responsePercent.textContent =
+      '100%';
+  }
+
+  // 更新场景标注的强调色
+  document.querySelectorAll('.scene-callout').forEach(el => {
+    el.classList.remove('mode-highlight');
+  });
+
+  const highlightMap = {
+    ai: '.callout-tower',
+    manage: '.callout-data',
+    life: '.callout-green',
+    energy: '.callout-green',
+    transport: '.callout-data'
+  };
+
+  const targetCallout = document.querySelector(
+    highlightMap[mode]
+  );
+
+  targetCallout?.classList.add(
+    'mode-highlight'
+  );
+
+  // 使模式变化对建筑粒子产生明显影响
+  clouds.forEach(cloud => {
+    const data = cloud.userData;
+
+    const active = isHighlightedRole(
+      data.role,
+      mode
+    );
+
+    data.targetOpacity = active
+      ? Math.min(1, data.originalOpacity * 1.15)
+      : Math.max(0.20, data.originalOpacity * 0.48);
+
+    data.targetSize = active
+      ? data.originalSize * 1.4
+      : data.originalSize * 0.72;
+
+    if (active) {
+      data.targetColor = config.color;
+    } else {
+      data.targetColor = data.originalColor;
     }
-
-    attr.needsUpdate = true;
-
-    building.points.material.opacity =
-      mode === "manage" ? 0.82 : 0.73;
-
-    building.points.material.size =
-      mode === "manage" ? 0.034 : 0.029;
   });
 
-  dataMaterial.color.copy(config.color);
+  // 网络连接也响应模式
+  allConnections.forEach(item => {
+    const active = isHighlightedRole(
+      item.role,
+      mode
+    );
 
-  dataLinks.forEach((link) => {
-    link.material.color.copy(config.color);
+    item.cloud.material.opacity =
+      active ? 0.95 : 0.15;
 
-    link.material.opacity =
-      mode === "manage" ? 0.42 : 0.32;
+    item.cloud.material.size =
+      active ? 0.85 : 0.42;
+
+    if (active) {
+      item.cloud.material.color.setHex(
+        config.color
+      );
+    } else {
+      item.cloud.material.color.setHex(
+        0x28628b
+      );
+    }
   });
 
-  groundRings.forEach((ring) => {
-    ring.material.color.copy(config.color);
+  // 动态数据流响应模式
+  flowSystems.forEach(system => {
+    const active = isHighlightedRole(
+      system.role,
+      mode
+    );
+
+    system.flow.material.opacity =
+      active ? 1 : 0.06;
+
+    system.flow.material.size =
+      active ? 1.5 : 0.65;
+
+    system.flow.material.color.setHex(
+      active ? config.color : 0x244963
+    );
   });
 
-  groundPoints.material.color.copy(config.color);
+  // 给建筑产生一个明显的全局脉冲
+  createPulse(
+    new THREE.Vector3(0, 0.6, 0)
+  );
 
-  if (mode === "manage") {
-    showToast("数字孪生启动 · 建筑扫描中");
-  }
+  showToast(config.toast);
 
-  if (mode === "ai") {
-    showToast("AI 教学启动 · 数据流正在传输");
-  }
-
-  if (mode === "energy") {
-    showToast("绿色能源启动 · 能量网络正在运行");
-  }
+  console.log(
+    `Campus mode changed: ${mode}`
+  );
 }
 
-$$("[data-mode]").forEach((button) => {
-  button.addEventListener("click", () => {
-    setMode(button.dataset.mode);
+// ======================================================
+// 13. 模块按钮绑定
+// ======================================================
+
+document.querySelectorAll('[data-mode]').forEach(button => {
+  button.addEventListener('click', () => {
+    switchMode(button.dataset.mode);
   });
 });
 
-/* ------------------ Panel collapse ------------------ */
+// ======================================================
+// 14. 可收纳面板
+// ======================================================
 
-let panelCollapsed = false;
+const panelToggle =
+  document.getElementById('panelToggle');
 
-function setupPanelToggle() {
-  let toggle = $("#panelToggle");
+const panelToggleText =
+  document.getElementById('panelToggleText');
 
-  if (!toggle) {
-    toggle = document.createElement("button");
+const panelBackdrop =
+  document.getElementById('panelBackdrop');
 
-    toggle.id = "panelToggle";
-    toggle.type = "button";
-    toggle.className = "panel-toggle";
-    toggle.textContent = "☰ 交互中心";
-    toggle.setAttribute("aria-expanded", "true");
+function openPanels() {
+  document.body.classList.add('panel-open');
 
-    document.body.appendChild(toggle);
+  panelToggle?.setAttribute(
+    'aria-expanded',
+    'true'
+  );
+
+  if (panelToggleText) {
+    panelToggleText.textContent = '收起面板';
   }
-
-  const style = document.createElement("style");
-
-  style.textContent = `
-    .panel-toggle {
-      position: fixed;
-      z-index: 1000;
-      top: 18%;
-      right: 3.2%;
-      padding: 13px 16px;
-      color: #a7f2ff;
-      background: rgba(4, 24, 43, 0.88);
-      border: 1px solid rgba(102, 224, 255, .7);
-      border-radius: 8px;
-      font: 600 14px/1.2 system-ui, sans-serif;
-      letter-spacing: 1px;
-      box-shadow: 0 0 18px rgba(40, 194, 255, .12);
-      backdrop-filter: blur(10px);
-    }
-
-    .panel-toggle:active {
-      background: rgba(24, 104, 139, .85);
-      box-shadow: 0 0 24px rgba(40, 224, 255, .5);
-    }
-
-    body.panels-collapsed .left-panel,
-    body.panels-collapsed .right-panel {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(16px);
-    }
-
-    .left-panel,
-    .right-panel {
-      transition: opacity .25s ease, transform .25s ease;
-    }
-
-    body.panels-collapsed .scene-callout {
-      opacity: .45;
-    }
-
-    @media(max-width:760px) {
-      .panel-toggle {
-        top: 20%;
-        right: 3%;
-        font-size: 12px;
-        padding: 12px 13px;
-      }
-
-      body.panels-collapsed .left-panel,
-      body.panels-collapsed .right-panel {
-        display: none;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-
-  toggle.addEventListener("click", () => {
-    panelCollapsed = !panelCollapsed;
-
-    document.body.classList.toggle(
-      "panels-collapsed",
-      panelCollapsed
-    );
-
-    toggle.setAttribute(
-      "aria-expanded",
-      String(!panelCollapsed)
-    );
-
-    toggle.textContent = panelCollapsed
-      ? "☰ 展开交互"
-      : "☰ 交互中心";
-
-    showToast(
-      panelCollapsed
-        ? "控制面板已收起"
-        : "控制面板已展开"
-    );
-  });
 }
 
-setupPanelToggle();
+function closePanels() {
+  document.body.classList.remove('panel-open');
 
-/* ------------------ Auto orbit ------------------ */
+  panelToggle?.setAttribute(
+    'aria-expanded',
+    'false'
+  );
 
-const autoButton = $("#autoOrbit");
-
-if (autoButton) {
-  autoButton.addEventListener("click", () => {
-    autoOrbit = !autoOrbit;
-
-    autoButton.classList.toggle("on", autoOrbit);
-
-    const state = autoButton.querySelector("b");
-
-    if (state) {
-      state.textContent = autoOrbit ? "ON" : "OFF";
-    }
-
-    showToast(
-      autoOrbit ? "自动环绕已启动" : "自动环绕已暂停"
-    );
-  });
+  if (panelToggleText) {
+    panelToggleText.textContent = '交互中心';
+  }
 }
 
-/* ------------------ Reset view ------------------ */
+function togglePanels() {
+  if (document.body.classList.contains('panel-open')) {
+    closePanels();
+  } else {
+    openPanels();
+  }
+}
 
-const resetButton = $("#resetView");
+panelToggle?.addEventListener(
+  'click',
+  togglePanels
+);
 
-if (resetButton) {
-  resetButton.addEventListener("click", () => {
+panelBackdrop?.addEventListener(
+  'click',
+  closePanels
+);
+
+document.querySelectorAll('[data-close-panels]').forEach(button => {
+  button.addEventListener(
+    'click',
+    closePanels
+  );
+});
+
+document.getElementById('closePanelBottom')?.addEventListener(
+  'click',
+  closePanels
+);
+
+// ESC 收起面板
+window.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    closePanels();
+  }
+});
+
+// ======================================================
+// 15. 消息提示
+// ======================================================
+
+const toastElement =
+  document.getElementById('interactionToast');
+
+let toastTimer = null;
+
+function showToast(message) {
+  if (!toastElement) return;
+
+  toastElement.textContent = message;
+  toastElement.classList.add('show');
+
+  clearTimeout(toastTimer);
+
+  toastTimer = setTimeout(() => {
+    toastElement.classList.remove('show');
+  }, 2400);
+}
+
+// ======================================================
+// 16. 自动环绕和视角复位
+// ======================================================
+
+const orbitButton =
+  document.getElementById('autoOrbit');
+
+const orbitState =
+  document.getElementById('orbitState');
+
+function updateOrbitButton() {
+  orbitButton?.classList.toggle(
+    'on',
+    autoOrbitEnabled
+  );
+
+  orbitButton?.setAttribute(
+    'aria-pressed',
+    String(autoOrbitEnabled)
+  );
+
+  if (orbitState) {
+    orbitState.textContent =
+      autoOrbitEnabled ? 'ON' : 'OFF';
+  }
+}
+
+orbitButton?.addEventListener('click', () => {
+  autoOrbitEnabled = !autoOrbitEnabled;
+
+  updateOrbitButton();
+
+  showToast(
+    autoOrbitEnabled
+      ? '自动环绕已开启'
+      : '自动环绕已暂停'
+  );
+});
+
+document.getElementById('resetView')?.addEventListener(
+  'click',
+  () => {
     targetRotationY = 0;
-    targetRotationX = -0.12;
+    targetRotationX = -0.20;
+    targetZoom = 1;
 
-    camera.position.set(0, 5.5, 20);
+    campus.position.set(0, 0, 0);
 
-    triggerPulse(0, 0);
-
-    showToast("视角已复位");
-  });
-}
-
-/* ------------------ Mouse and touch controls ------------------ */
-
-renderer.domElement.addEventListener("pointerdown", (event) => {
-  isDragging = true;
-  pointerMoved = false;
-
-  previousX = event.clientX;
-  previousY = event.clientY;
-
-  lastPointerTime = performance.now();
-});
-
-window.addEventListener("pointerup", () => {
-  isDragging = false;
-});
-
-window.addEventListener("pointermove", (event) => {
-  if (!isDragging) return;
-
-  const dx = event.clientX - previousX;
-  const dy = event.clientY - previousY;
-
-  if (Math.abs(dx) + Math.abs(dy) > 3) {
-    pointerMoved = true;
+    showToast('三维视角已复位');
   }
+);
 
-  targetRotationY += dx * 0.004;
-  targetRotationX += dy * 0.002;
+// ======================================================
+// 17. 鼠标与手机触摸旋转
+// ======================================================
 
-  targetRotationX = clamp(
-    targetRotationX,
-    -0.75,
-    0.35
-  );
+const raycaster = new THREE.Raycaster();
 
-  previousX = event.clientX;
-  previousY = event.clientY;
+const pointer = new THREE.Vector2();
 
-  lastPointerTime = performance.now();
-});
+const horizontalPlane = new THREE.Plane(
+  new THREE.Vector3(0, 1, 0),
+  0
+);
 
-renderer.domElement.addEventListener("wheel", (event) => {
-  camera.position.z += event.deltaY * 0.012;
+let pointerDown = false;
 
-  camera.position.z = clamp(
-    camera.position.z,
-    12,
-    32
-  );
-}, { passive: true });
+let pointerStartX = 0;
+let pointerStartY = 0;
 
-renderer.domElement.addEventListener("click", (event) => {
-  if (pointerMoved) return;
+let lastPointerX = 0;
+let lastPointerY = 0;
 
-  const rect = renderer.domElement.getBoundingClientRect();
+let pointerMoved = false;
 
-  const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+renderer.domElement.addEventListener(
+  'pointerdown',
+  event => {
+    pointerDown = true;
+    pointerMoved = false;
 
-  const raycaster = new THREE.Raycaster();
+    pointerStartX = event.clientX;
+    pointerStartY = event.clientY;
 
-  raycaster.setFromCamera(
-    new THREE.Vector2(x, y),
-    camera
-  );
+    lastPointerX = event.clientX;
+    lastPointerY = event.clientY;
 
-  const targets = buildings.map((b) => b.points);
-
-  const hits = raycaster.intersectObjects(targets, true);
-
-  if (hits.length > 0) {
-    const object = hits[0].object;
-
-    const building = buildings.find((b) =>
-      b.group === object.parent
-    );
-
-    if (building) {
-      triggerPulse(building.x, building.z);
-
-      building.points.material.opacity = 1;
-
-      showToast(`已选中：${building.name}`);
-
-      return;
+    try {
+      renderer.domElement.setPointerCapture(
+        event.pointerId
+      );
+    } catch (_) {
+      // 某些移动浏览器不支持时忽略
     }
   }
+);
 
-  triggerPulse(
-    random(-4, 4),
-    random(-4, 4)
-  );
+renderer.domElement.addEventListener(
+  'pointermove',
+  event => {
+    if (!pointerDown) return;
 
-  showToast("校园粒子响应 · 能量波正在扩散");
-});
+    const dx =
+      event.clientX - lastPointerX;
 
-/* ------------------ Responsive camera ------------------ */
+    const dy =
+      event.clientY - lastPointerY;
 
-function updateCameraLayout() {
-  const mobile = innerWidth < 760;
+    const totalMovement = Math.hypot(
+      event.clientX - pointerStartX,
+      event.clientY - pointerStartY
+    );
 
-  camera.aspect = innerWidth / innerHeight;
+    if (totalMovement > 5) {
+      pointerMoved = true;
+    }
 
-  camera.fov = mobile ? 48 : 42;
+    if (pointerMoved) {
+      targetRotationY += dx * 0.006;
 
-  camera.position.z = mobile ? 24 : 20;
-  camera.position.y = mobile ? 6.4 : 5.5;
+      targetRotationX += dy * 0.0035;
 
-  camera.updateProjectionMatrix();
+      targetRotationX =
+        THREE.MathUtils.clamp(
+          targetRotationX,
+          -0.75,
+          0.40
+        );
+    }
 
-  renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(
-    Math.min(
-      devicePixelRatio || 1,
-      mobile ? 1.35 : 1.8
-    )
-  );
+    lastPointerX = event.clientX;
+    lastPointerY = event.clientY;
+  }
+);
+
+function finishPointer(event) {
+  if (!pointerDown) return;
+
+  pointerDown = false;
+
+  if (!pointerMoved) {
+    createClickPulse(
+      event.clientX,
+      event.clientY
+    );
+  }
 }
 
-window.addEventListener("resize", updateCameraLayout);
+renderer.domElement.addEventListener(
+  'pointerup',
+  finishPointer
+);
 
-/* ------------------ Loading status ------------------ */
+renderer.domElement.addEventListener(
+  'pointercancel',
+  () => {
+    pointerDown = false;
+  }
+);
 
-function updateCycle() {
-  const steps = $$(".cycle-step");
+// 点击画面的位置，产生局部波纹
+function createClickPulse(clientX, clientY) {
+  const rect =
+    renderer.domElement.getBoundingClientRect();
 
-  if (!steps.length) return;
+  pointer.x =
+    ((clientX - rect.left) / rect.width) * 2 - 1;
 
-  const activeIndex = Math.floor(elapsed * 0.8) % steps.length;
+  pointer.y =
+    -((clientY - rect.top) / rect.height) * 2 + 1;
 
-  steps.forEach((step, index) => {
-    step.classList.toggle(
-      "current",
-      index === activeIndex
+  raycaster.setFromCamera(pointer, camera);
+
+  const worldPoint = new THREE.Vector3();
+
+  const hit = raycaster.ray.intersectPlane(
+    horizontalPlane,
+    worldPoint
+  );
+
+  if (!hit) return;
+
+  const localPoint = campus.worldToLocal(
+    worldPoint.clone()
+  );
+
+  // 避免在远离校园的位置生成波纹
+  const distance = Math.hypot(
+    localPoint.x,
+    localPoint.z
+  );
+
+  if (distance > 120) return;
+
+  createPulse(localPoint);
+
+  showToast('场景已响应 · 粒子脉冲已触发');
+}
+
+// 双指缩放
+let previousPinchDistance = 0;
+
+renderer.domElement.addEventListener(
+  'touchmove',
+  event => {
+    if (event.touches.length !== 2) return;
+
+    event.preventDefault();
+
+    const dx =
+      event.touches[0].clientX -
+      event.touches[1].clientX;
+
+    const dy =
+      event.touches[0].clientY -
+      event.touches[1].clientY;
+
+    const distance = Math.hypot(dx, dy);
+
+    if (previousPinchDistance > 0) {
+      targetZoom *=
+        distance / previousPinchDistance;
+
+      targetZoom =
+        THREE.MathUtils.clamp(
+          targetZoom,
+          0.60,
+          1.80
+        );
+    }
+
+    previousPinchDistance = distance;
+  },
+  {
+    passive: false
+  }
+);
+
+renderer.domElement.addEventListener(
+  'touchend',
+  () => {
+    previousPinchDistance = 0;
+  }
+);
+
+// 鼠标滚轮缩放
+renderer.domElement.addEventListener(
+  'wheel',
+  event => {
+    targetZoom *=
+      event.deltaY > 0 ? 0.94 : 1.06;
+
+    targetZoom =
+      THREE.MathUtils.clamp(
+        targetZoom,
+        0.60,
+        1.80
+      );
+  },
+  {
+    passive: true
+  }
+);
+
+// ======================================================
+// 18. 动画更新
+// ======================================================
+
+const clock = new THREE.Clock();
+
+let lastMetricUpdate = 0;
+
+function animateBuildings(elapsed) {
+  clouds.forEach((cloud, index) => {
+    const data = cloud.userData;
+
+    const position =
+      cloud.geometry.attributes.position;
+
+    const base =
+      data.basePositions;
+
+    const modeAge =
+      elapsed - modeChangeTime;
+
+    const transitionPulse =
+      Math.max(
+        0,
+        1 - modeAge / 1.5
+      );
+
+    // 平滑切换颜色、亮度与尺寸
+    if (data.targetColor !== undefined) {
+      cloud.material.color.lerp(
+        new THREE.Color(data.targetColor),
+        0.075
+      );
+    }
+
+    if (data.targetOpacity !== undefined) {
+      cloud.material.opacity +=
+        (data.targetOpacity -
+          cloud.material.opacity) * 0.10;
+    }
+
+    if (data.targetSize !== undefined) {
+      cloud.material.size +=
+        (data.targetSize -
+          cloud.material.size) * 0.10;
+    }
+
+    const roleActive = isHighlightedRole(
+      data.role,
+      currentMode
     );
+
+    const responseStrength =
+      roleActive ? 1 : 0.45;
+
+    const frequency =
+      0.85 + (index % 5) * 0.15;
+
+    // 建筑立面产生轻微粒子起伏。
+    // 不改变建筑整体结构，但让响应更容易看见。
+    for (
+      let i = 0;
+      i < position.count;
+      i++
+    ) {
+      const j = i * 3;
+
+      const bx = base[j];
+      const by = base[j + 1];
+      const bz = base[j + 2];
+
+      const wave =
+        Math.sin(
+          elapsed * 2.0 +
+          by * 0.12 +
+          data.phase
+        );
+
+      const verticalResponse =
+        Math.sin(
+          elapsed * frequency +
+          by * 0.18 +
+          data.phase
+        );
+
+      const scanPhase =
+        ((by / 55) - elapsed * 0.42) % 1;
+
+      let scan = 0;
+
+      if (scanPhase > -0.025 && scanPhase < 0.025) {
+        scan = 1;
+      }
+
+      const pulseBoost =
+        transitionPulse * 1.5;
+
+      position.array[j] =
+        bx +
+        Math.sin(elapsed + bz * 0.08) *
+        data.waveStrength *
+        responseStrength;
+
+      position.array[j + 1] =
+        by +
+        verticalResponse *
+        0.06 *
+        responseStrength;
+
+      position.array[j + 2] =
+        bz +
+        wave *
+        data.waveStrength *
+        responseStrength;
+
+      // 扫描模式下，竖向位置不同的粒子会产生亮度变化
+      if (currentMode === 'manage') {
+        const brightness =
+          Math.max(0, 1 - Math.abs(scanPhase) * 35);
+
+        cloud.material.opacity =
+          Math.min(
+            1,
+            data.originalOpacity * 0.88 +
+            brightness * 0.35 +
+            pulseBoost * 0.10
+          );
+      }
+    }
+
+    position.needsUpdate = true;
   });
 }
 
-/* ------------------ Animation loop ------------------ */
+function animateFlows(elapsed) {
+  flowSystems.forEach(system => {
+    const { flow, points, count } = system;
+
+    const position =
+      flow.geometry.attributes.position;
+
+    const pathLength = points.length;
+
+    const pathPosition = t => {
+      const clamped =
+        ((t % 1) + 1) % 1;
+
+      const scaled =
+        clamped * (pathLength - 1);
+
+      const i = Math.floor(scaled);
+      const next =
+        Math.min(i + 1, pathLength - 1);
+
+      const blend =
+        scaled - i;
+
+      return new THREE.Vector3(
+        THREE.MathUtils.lerp(
+          points[i].x,
+          points[next].x,
+          blend
+        ),
+
+        THREE.MathUtils.lerp(
+          points[i].y,
+          points[next].y,
+          blend
+        ),
+
+        THREE.MathUtils.lerp(
+          points[i].z,
+          points[next].z,
+          blend
+        )
+      );
+    };
+
+    for (let i = 0; i < count; i++) {
+      const t =
+        elapsed * system.speed +
+        system.offset +
+        i / count;
+
+      const p = pathPosition(t);
+
+      const j = i * 3;
+
+      position.array[j] = p.x;
+      position.array[j + 1] = p.y;
+      position.array[j + 2] = p.z;
+    }
+
+    position.needsUpdate = true;
+  });
+}
+
+function animateWater(elapsed) {
+  animatedRings.forEach(item => {
+    const position =
+      item.cloud.geometry.attributes.position;
+
+    const base = item.base;
+
+    for (let i = 0; i < position.count; i++) {
+      const j = i * 3;
+
+      const bx = base[j];
+      const by = base[j + 1];
+      const bz = base[j + 2];
+
+      const wave =
+        Math.sin(
+          elapsed * 2 +
+          item.phase +
+          i * 0.07
+        );
+
+      position.array[j] = bx;
+      position.array[j + 1] =
+        by + wave * 0.12;
+
+      position.array[j + 2] = bz;
+    }
+
+    position.needsUpdate = true;
+
+    if (currentMode === 'life') {
+      item.cloud.material.opacity =
+        0.65 +
+        0.30 *
+        (0.5 + 0.5 * Math.sin(
+          elapsed * 2.2 + item.phase
+        ));
+    } else {
+      item.cloud.material.opacity =
+        0.42 +
+        0.16 *
+        (0.5 + 0.5 * Math.sin(
+          elapsed + item.phase
+        ));
+    }
+  });
+}
+
+function animatePulses(delta) {
+  for (
+    let i = pulseSystems.length - 1;
+    i >= 0;
+    i--
+  ) {
+    const pulse = pulseSystems[i];
+
+    pulse.age += delta;
+
+    const t = THREE.MathUtils.clamp(
+      pulse.age / pulse.duration,
+      0,
+      1
+    );
+
+    const radius =
+      0.8 + t * 18;
+
+    const position =
+      pulse.geometry.attributes.position;
+
+    for (
+      let p = 0;
+      p < pulse.angles.length;
+      p++
+    ) {
+      const angle = pulse.angles[p];
+
+      const j = p * 3;
+
+      position.array[j] =
+        pulse.position.x +
+        Math.cos(angle) * radius;
+
+      position.array[j + 1] =
+        pulse.position.y +
+        Math.sin(angle * 5 + pulse.age * 5) * 0.3;
+
+      position.array[j + 2] =
+        pulse.position.z +
+        Math.sin(angle) * radius;
+    }
+
+    position.needsUpdate = true;
+
+    pulse.ring.material.opacity =
+      Math.max(0, 1 - t);
+
+    pulse.ring.material.size =
+      1.4 - t * 0.7;
+
+    if (t >= 1) {
+      campus.remove(pulse.ring);
+
+      pulse.geometry.dispose();
+      pulse.ring.material.dispose();
+
+      pulseSystems.splice(i, 1);
+    }
+  }
+}
+
+function updateModeResponse(elapsed) {
+  // 短暂脉冲结束后，让进度条保持稳定。
+  const age =
+    elapsed - modeChangeTime;
+
+  const progress =
+    Math.min(
+      100,
+      Math.round(80 + Math.min(age, 1.5) / 1.5 * 20)
+    );
+
+  if (responseProgressBar) {
+    responseProgressBar.style.width =
+      `${progress}%`;
+  }
+
+  if (responsePercent) {
+    responsePercent.textContent =
+      `${progress}%`;
+  }
+}
 
 function animate() {
   requestAnimationFrame(animate);
 
-  const dt = Math.min(clock.getDelta(), 0.05);
+  const delta = Math.min(
+    clock.getDelta(),
+    0.04
+  );
 
-  elapsed += dt;
-  frameCount++;
+  const elapsed =
+    clock.elapsedTime;
 
-  const config = MODES[currentMode];
-
-  // 场景自动环绕
-  if (autoOrbit && !isDragging) {
-    targetRotationY += dt * 0.07 * config.speed;
+  // 自动环绕
+  if (autoOrbitEnabled && !pointerDown) {
+    targetRotationY += delta * 0.055;
   }
 
-  world.rotation.y +=
-    (targetRotationY - world.rotation.y) * 0.035;
+  rotationY +=
+    (targetRotationY - rotationY) * 0.08;
 
-  world.rotation.x +=
-    (targetRotationX - world.rotation.x) * 0.035;
+  rotationX +=
+    (targetRotationX - rotationX) * 0.08;
 
-  // 建筑粒子微弱呼吸，不再整体闪白
-  buildings.forEach((building, index) => {
-    const wave =
-      0.04 * Math.sin(elapsed * 1.8 + index * 0.8);
+  zoom +=
+    (targetZoom - zoom) * 0.08;
 
-    building.points.material.opacity =
-      (currentMode === "manage" ? 0.8 : 0.7) + wave;
+  campus.rotation.y = rotationY;
+  campus.rotation.x = rotationX;
 
-    building.points.rotation.y =
-      Math.sin(elapsed * 0.15 + index) * 0.012;
-  });
+  campus.scale.setScalar(zoom);
 
-  // 地面粒子缓慢转动
-  groundPoints.rotation.y += dt * 0.008;
+  // 背景星尘缓慢环绕
+  starField.rotation.y =
+    elapsed * 0.006;
 
-  // 环形扫描
-  groundRings.forEach((ring, index) => {
-    ring.material.opacity =
-      0.14 +
-      0.08 * Math.sin(elapsed * 1.5 + index * 0.7);
-  });
+  animateBuildings(elapsed);
+  animateFlows(elapsed);
+  animateWater(elapsed);
+  animatePulses(delta);
 
-  // 数据流沿连接线移动
-  dataParticles.forEach((dot) => {
-    const link = dataLinks[dot.userData.path];
+  updateModeResponse(elapsed);
 
-    if (!link) return;
+  // 页面上的粒子数量显示真实统计值
+  if (
+    elapsed - lastMetricUpdate > 0.5
+  ) {
+    lastMetricUpdate = elapsed;
 
-    dot.userData.progress +=
-      dt * dot.userData.speed * config.speed * 0.15;
-
-    if (dot.userData.progress > 1) {
-      dot.userData.progress = 0;
-    }
-
-    const attr = link.geometry.getAttribute("position");
-
-    const a = new THREE.Vector3(
-      attr.getX(0),
-      attr.getY(0),
-      attr.getZ(0)
-    );
-
-    const b = new THREE.Vector3(
-      attr.getX(1),
-      attr.getY(1),
-      attr.getZ(1)
-    );
-
-    const c = new THREE.Vector3(
-      attr.getX(2),
-      attr.getY(2),
-      attr.getZ(2)
-    );
-
-    const t = dot.userData.progress;
-
-    if (t < 0.5) {
-      dot.position.lerpVectors(a, b, t * 2);
-    } else {
-      dot.position.lerpVectors(b, c, (t - 0.5) * 2);
-    }
-  });
-
-  // 扫描环由小到大扩散
-  if (scanStrength > 0) {
-    scanStrength = Math.max(0, scanStrength - dt * 0.32);
-
-    scanRing.visible = true;
-
-    const scale = 1 + (1 - scanStrength) * 10;
-
-    scanRing.scale.setScalar(scale);
-
-    scanRing.material.opacity = scanStrength * 0.8;
-  } else {
-    scanRing.visible = false;
-  }
-
-  // 点击产生的脉冲环
-  for (let i = pulseRings.length - 1; i >= 0; i--) {
-    const ring = pulseRings[i];
-
-    ring.userData.scale += dt * ring.userData.speed;
-    ring.userData.life -= dt * 0.6;
-
-    ring.scale.setScalar(ring.userData.scale);
-
-    ring.material.opacity = Math.max(
-      0,
-      ring.userData.life
-    );
-
-    if (ring.userData.life <= 0) {
-      effectGroup.remove(ring);
-
-      ring.geometry.dispose();
-      ring.material.dispose();
-
-      pulseRings.splice(i, 1);
-    }
-  }
-
-  pulseStrength = Math.max(0, pulseStrength - dt);
-
-  stars.rotation.y += dt * 0.003;
-
-  updateCycle();
-
-  // 每秒更新一次粒子数量，避免频繁操作 DOM
-  if (elapsed - lastMetricTime > 1) {
-    lastMetricTime = elapsed;
-
-    const metric = $("#particleMetric");
+    const metric =
+      document.getElementById('particleMetric');
 
     if (metric) {
-      const total =
-        CONFIG.buildingParticles +
-        CONFIG.groundParticles;
-
-      metric.textContent = total.toLocaleString("en-US");
+      metric.textContent =
+        activeParticleCount.toLocaleString();
     }
   }
 
-  renderer.render(scene, camera);
+  renderer.render(
+    scene,
+    camera
+  );
 }
 
-/* ------------------ Start ------------------ */
+// ======================================================
+// 19. 自适应大小
+// ======================================================
 
-try {
-  setMode("ai");
-  updateCameraLayout();
+function resize() {
+  const width =
+    Math.max(stage.clientWidth, 1);
 
-  animate();
+  const height =
+    Math.max(stage.clientHeight, 1);
 
-  showToast("未来校园已启动 · 点击建筑体验粒子交互");
+  camera.aspect = width / height;
 
-} catch (error) {
-  console.error(error);
+  camera.updateProjectionMatrix();
 
-  if (errorBox) {
-    errorBox.hidden = false;
-    errorBox.textContent =
-      "场景启动失败：" + error.message;
+  renderer.setSize(
+    width,
+    height
+  );
+}
+
+window.addEventListener(
+  'resize',
+  resize
+);
+
+// 首次打开页面的模式
+switchMode('ai');
+
+updateOrbitButton();
+
+resize();
+
+// 初始欢迎提示
+setTimeout(() => {
+  showToast(
+    '校园粒子系统已启动 · 点击建筑可触发粒子波'
+  );
+}, 1000);
+
+// 开始动画
+animate();
+
+console.log(
+  'SQIST FUTURE CAMPUS / 初始化完成',
+  {
+    particleCount: activeParticleCount,
+    buildings: 9,
+    modes: Object.keys(MODES)
   }
-}
+);
