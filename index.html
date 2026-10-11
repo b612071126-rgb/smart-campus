@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#eaf5ff">
+<title>商丘工学院 · AI未来概念校园</title>
+
+<style>
+:root {
+  --blue: #167dff;
+  --cyan: #00c9e8;
+  --ink: #17395e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #edf7ff;
+  color: var(--ink);
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.ui {
+  position: fixed;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.top {
+  top: 24px;
+  left: 28px;
+  right: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.brand {
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: #1686d8;
+  font-weight: 700;
+}
+
+.brand small {
+  display: block;
+  margin-top: 9px;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: #7196b6;
+}
+
+.status {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #4386b4;
+  text-align: right;
+}
+
+.status span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00c9a7;
+  margin-right: 7px;
+  box-shadow: 0 0 10px #00c9a7;
+}
+
+.hero {
+  left: 30px;
+  bottom: 104px;
+  max-width: 480px;
+}
+
+.eyebrow {
+  color: #188ee8;
+  font-size: 10px;
+  letter-spacing: 4px;
+  margin-bottom: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(28px, 5vw, 55px);
+  line-height: 1.2;
+  letter-spacing: 1px;
+  font-weight: 800;
+  color: #174b78;
+}
+
+h1 em {
+  color: #168bff;
+  font-style: normal;
+}
+
+.subtitle {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #678eae;
+  margin-top: 13px;
+}
+
+.line {
+  width: 85px;
+  height: 3px;
+  margin-top: 22px;
+  background: linear-gradient(90deg, #148dff, #00d7dc, transparent);
+}
+
+.signature {
+  margin-top: 17px;
+  color: #4d7797;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.bottom {
+  left: 28px;
+  right: 28px;
+  bottom: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.hint {
+  font-size: 10px;
+  line-height: 2;
+  letter-spacing: 1px;
+  color: #7394b0;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+button {
+  background: rgba(255,255,255,.8);
+  color: #2676ae;
+  border: 1px solid rgba(53,147,219,.28);
+  border-radius: 4px;
+  padding: 10px 13px;
+  font-size: 11px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: .25s;
+}
+
+button:hover {
+  background: #168bff;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.corner {
+  position: fixed;
+  right: 28px;
+  bottom: 105px;
+  text-align: right;
+  color: #7ba3c2;
+  font-size: 10px;
+  line-height: 2;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
+.corner strong {
+  display: block;
+  font-size: 21px;
+  color: #168bff;
+  font-weight: 300;
+}
+
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: #edf7ff;
+  color: #168bff;
+  font-size: 12px;
+  letter-spacing: 4px;
+  transition: opacity .8s;
+}
+
+#loading.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#tooltip {
+  position: fixed;
+  display: none;
+  z-index: 10;
+  padding: 9px 12px;
+  color: #1769a9;
+  background: rgba(255,255,255,.94);
+  border: 1px solid #8acbff;
+  border-radius: 4px;
+  font-size: 11px;
+  pointer-events: none;
+  box-shadow: 0 5px 25px rgba(29,131,207,.12);
+}
+
+@media (max-width: 600px) {
+  .top {
+    top: 17px;
+    left: 17px;
+    right: 17px;
+  }
+
+  .brand {
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+
+  .hero {
+    left: 18px;
+    bottom: 118px;
+    max-width: 90%;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .corner {
+    right: 17px;
+    bottom: 120px;
+    font-size: 9px;
+  }
+
+  .corner strong {
+    font-size: 17px;
+  }
+
+  .bottom {
+    left: 17px;
+    right: 17px;
+    bottom: 13px;
+    align-items: end;
+  }
+
+  .hint {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+
+  button {
+    padding: 9px 10px;
+    font-size: 10px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="loading">INITIALIZING CAMPUS SYSTEM</div>
+
+<div id="scene"></div>
+
+<div class="ui top">
+  <div class="brand">
+    SHANGQIU INSTITUTE OF TECHNOLOGY
+    <small>SMART CAMPUS · DIGITAL FUTURE</small>
+  </div>
+  <div class="status">
+    <span></span>SYSTEM ONLINE
+    <br>AI VISUAL EXPERIMENT
+  </div>
+</div>
+
+<div class="ui hero">
+  <div class="eyebrow">FUTURE · INTELLIGENCE · INNOVATION</div>
+  <h1>AI 未来<br><em>概念校园</em></h1>
+  <div class="subtitle">让建筑成为数据，让空间拥有生命</div>
+  <div class="line"></div>
+  <div class="signature">商丘工学院 · 智建 1 班 · 李镇圳</div>
+</div>
+
+<div class="corner">
+  DIGITAL ARCHITECTURE
+  <strong id="particleCount">00000</strong>
+  PARTICLES IN MOTION
+</div>
+
+<div class="ui bottom">
+  <div class="hint">
+    DRAG — ROTATE &nbsp; SCROLL — ZOOM
+    <br>点击建筑，唤醒粒子能量
+  </div>
+
+  <div class="controls">
+    <button id="explode">粒子脉冲</button>
+    <button id="reset">复位视角</button>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+
+/* =====================================
+   1. 基础场景
+===================================== */
+
+const container = document.querySelector("#scene");
+const loading = document.querySelector("#loading");
+const tooltip = document.querySelector("#tooltip");
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#edf7ff");
+scene.fog = new THREE.Fog("#edf7ff", 22, 65);
+
+const camera = new THREE.PerspectiveCamera(
+  43,
+  innerWidth / innerHeight,
+  0.1,
+  150
+);
+
+camera.position.set(12, 10, 17);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha: false,
+  powerPreference: "high-performance"
+});
+
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.35;
+
+container.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xe9f8ff, 0x829eb8, 2.1));
+
+const sun = new THREE.DirectionalLight(0xffffff, 2.5);
+sun.position.set(8, 15, 10);
+scene.add(sun);
+
+const fill = new THREE.PointLight(0x5acaff, 55, 45);
+fill.position.set(-8, 7, -6);
+scene.add(fill);
+
+
+/* =====================================
+   2. 自己编写的轻量轨道控制器
+   不依赖 OrbitControls
+===================================== */
+
+let targetYaw = 0.55;
+let yaw = targetYaw;
+
+let targetPitch = 0.55;
+let pitch = targetPitch;
+
+let targetDistance = 23;
+let distance = targetDistance;
+
+const target = new THREE.Vector3(0, 0.8, 0);
+
+let dragging = false;
+let moved = false;
+let pointerX = 0;
+let pointerY = 0;
+let downX = 0;
+let downY = 0;
+
+const canvas = renderer.domElement;
+
+canvas.addEventListener("pointerdown", e => {
+  dragging = true;
+  moved = false;
+  pointerX = e.clientX;
+  pointerY = e.clientY;
+  downX = e.clientX;
+  downY = e.clientY;
+  canvas.setPointerCapture(e.pointerId);
+});
+
+canvas.addEventListener("pointermove", e => {
+  const dx = e.clientX - pointerX;
+  const dy = e.clientY - pointerY;
+
+  if (dragging) {
+    if (Math.abs(e.clientX - downX) +
+        Math.abs(e.clientY - downY) > 5) {
+      moved = true;
+    }
+
+    targetYaw -= dx * 0.006;
+    targetPitch += dy * 0.005;
+    targetPitch = THREE.MathUtils.clamp(
+      targetPitch, 0.08, 1.35
+    );
+  }
+
+  pointerX = e.clientX;
+  pointerY = e.clientY;
+
+  updatePointer(e);
+});
+
+canvas.addEventListener("pointerup", () => {
+  dragging = false;
+});
+
+canvas.addEventListener("pointercancel", () => {
+  dragging = false;
+});
+
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  targetDistance += e.deltaY * 0.018;
+  targetDistance = THREE.MathUtils.clamp(
+    targetDistance, 9, 38
+  );
+}, { passive: false });
+
+
+/* =====================================
+   3. 粒子数据系统
+===================================== */
+
+const particleGroups = [];
+const interactiveObjects = [];
+
+const colors = [
+  new THREE.Color("#168bff"),
+  new THREE.Color("#00cde7"),
+  new THREE.Color("#55baff"),
+  new THREE.Color("#b0e9ff"),
+  new THREE.Color("#ffffff"),
+  new THREE.Color("#ffce79")
+];
+
+const material = new THREE.PointsMaterial({
+  size: 0.075,
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.9,
+  depthWrite: false,
+  sizeAttenuation: true,
+  blending: THREE.NormalBlending
+});
+
+let totalParticles = 0;
+
+function randomColor() {
+  const r = Math.random();
+
+  if (r < 0.35) return colors[0].clone();
+  if (r < 0.58) return colors[1].clone();
+  if (r < 0.75) return colors[2].clone();
+  if (r < 0.88) return colors[3].clone();
+  if (r < 0.96) return colors[4].clone();
+
+  return colors[5].clone();
+}
+
+function createParticleGroup(name, points, size = 0.075) {
+  if (!points.length) return null;
+
+  const positions = new Float32Array(points.length * 3);
+  const colorArray = new Float32Array(points.length * 3);
+
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+
+    positions[i * 3] = p.x;
+    positions[i * 3 + 1] = p.y;
+    positions[i * 3 + 2] = p.z;
+
+    const c = randomColor();
+
+    colorArray[i * 3] = c.r;
+    colorArray[i * 3 + 1] = c.g;
+    colorArray[i * 3 + 2] = c.b;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+
+  geometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(positions, 3)
+  );
+
+  geometry.setAttribute(
+    "color",
+    new THREE.BufferAttribute(colorArray, 3)
+  );
+
+  const mat = material.clone();
+  mat.size = size;
+
+  const mesh = new THREE.Points(geometry, mat);
+
+  mesh.userData.name = name;
+  mesh.userData.original = positions.slice();
+  mesh.userData.phase = Math.random() * 100;
+  mesh.userData.strength = 0;
+  mesh.userData.pulse = 0;
+
+  scene.add(mesh);
+  particleGroups.push(mesh);
+  interactiveObjects.push(mesh);
+
+  totalParticles += points.length;
+
+  return mesh;
+}
+
+
+/* =====================================
+   4. 建筑粒子生成器
+   用建筑表面分布粒子，而非普通实心模型
+===================================== */
+
+function boxParticles(cx, cy, cz, w, h, d, spacing) {
+  const pts = [];
+
+  const nx = Math.max(2, Math.floor(w / spacing));
+  const ny = Math.max(2, Math.floor(h / spacing));
+  const nz = Math.max(2, Math.floor(d / spacing));
+
+  // 前后墙
+  for (let i = 0; i <= nx; i++) {
+    for (let j = 0; j <= ny; j++) {
+      if (Math.random() > 0.76) continue;
+
+      const x = cx - w / 2 + w * i / nx;
+      const y = cy + h * j / ny;
+
+      pts.push(new THREE.Vector3(x, y, cz - d / 2));
+      pts.push(new THREE.Vector3(x, y, cz + d / 2));
+    }
+  }
+
+  // 左右墙
+  for (let i = 0; i <= nz; i++) {
+    for (let j = 0; j <= ny; j++) {
+      if (Math.random() > 0.76) continue;
+
+      const z = cz - d / 2 + d * i / nz;
+      const y = cy + h * j / ny;
+
+      pts.push(new THREE.Vector3(cx - w / 2, y, z));
+      pts.push(new THREE.Vector3(cx + w / 2, y, z));
+    }
+  }
+
+  // 屋顶轮廓与屋顶网格
+  for (let i = 0; i <= nx; i++) {
+    for (let j = 0; j <= nz; j++) {
+      if (Math.random() > 0.7) continue;
+
+      pts.push(new THREE.Vector3(
+        cx - w / 2 + w * i / nx,
+        cy + h,
+        cz - d / 2 + d * j / nz
+      ));
+    }
+  }
+
+  return pts;
+}
+
+function building(name, x, z, w, h, d, spacing = 0.28) {
+  const pts = boxParticles(x, 0, z, w, h, d, spacing);
+
+  // 窗格横线，强化建筑结构
+  const floors = Math.floor(h / 0.55);
+
+  for (let f = 1; f <= floors; f++) {
+    const y = h * f / (floors + 1);
+
+    for (let i = 0; i <= 22; i++) {
+      const px = x - w / 2 + w * i / 22;
+
+      pts.push(new THREE.Vector3(
+        px, y, z - d / 2 - 0.015
+      ));
+
+      pts.push(new THREE.Vector3(
+        px, y, z + d / 2 + 0.015
+      ));
+    }
+  }
+
+  const group = createParticleGroup(name, pts, 0.065);
+
+  // 建筑屋顶光带
+  const outline = [];
+  const y = h + 0.06;
+
+  const corners = [
+    [x-w/2,y,z-d/2],
+    [x+w/2,y,z-d/2],
+    [x+w/2,y,z+d/2],
+    [x-w/2,y,z+d/2]
+  ];
+
+  for (let k = 0; k < 4; k++) {
+    const a = corners[k];
+    const b = corners[(k+1)%4];
+
+    const length = 80;
+
+    for (let i = 0; i <= length; i++) {
+      const t = i / length;
+
+      outline.push(new THREE.Vector3(
+        a[0] + (b[0]-a[0])*t,
+        a[1],
+        a[2] + (b[2]-a[2])*t
+      ));
+    }
+  }
+
+  createParticleGroup(name + " · 轮廓", outline, 0.045);
+
+  return group;
+}
+
+
+/* =====================================
+   5. 校园地面与空间结构
+===================================== */
+
+// 地面基础网格
+const grid = new THREE.GridHelper(
+  34, 68, 0x75c9ff, 0xc9e8fa
+);
+
+grid.position.y = -0.06;
+grid.material.transparent = true;
+grid.material.opacity = 0.48;
+scene.add(grid);
+
+// 校园边界点阵
+const groundPoints = [];
+
+for (let x = -15; x <= 15; x += 0.27) {
+  for (let z = -11; z <= 11; z += 0.27) {
+    // 只保留较稀疏的空间采样点
+    if (Math.random() > 0.17) continue;
+
+    // 中央留出广场和道路
+    if (Math.abs(x) < 1.3 && Math.abs(z) < 7) continue;
+    if (Math.abs(z) < 0.8 && Math.abs(x) < 11) continue;
+
+    groundPoints.push(new THREE.Vector3(
+      x, -0.015 + Math.random() * 0.035, z
+    ));
+  }
+}
+
+createParticleGroup("校园地面", groundPoints, 0.035);
+
+
+// 主干道
+function makePath(x1, z1, x2, z2, count = 220) {
+  const pts = [];
+
+  for (let i = 0; i <= count; i++) {
+    const t = i / count;
+
+    const x = x1 + (x2-x1)*t;
+    const z = z1 + (z2-z1)*t;
+
+    pts.push(new THREE.Vector3(x, 0.025, z));
+
+    // 两侧道路边界
+    pts.push(new THREE.Vector3(x + 0.16, 0.02, z));
+  }
+
+  createParticleGroup("校园道路", pts, 0.055);
+}
+
+makePath(0, -11, 0, 11, 260);
+makePath(-14, 0, 14, 0, 280);
+
+
+// 道路中的流动光点
+const trafficPoints = [];
+
+for (let i = 0; i < 280; i++) {
+  const t = Math.random();
+
+  trafficPoints.push({
+    position: new THREE.Vector3(
+      0,
+      0.08,
+      -11 + t * 22
+    ),
+    direction: Math.random() > 0.5 ? 1 : -1,
+    speed: 0.5 + Math.random() * 1.3
+  });
+}
+
+const trafficGeometry = new THREE.BufferGeometry();
+
+trafficGeometry.setAttribute(
+  "position",
+  new THREE.BufferAttribute(
+    new Float32Array(trafficPoints.length * 3), 3
+  )
+);
+
+const trafficMaterial = new THREE.PointsMaterial({
+  color: "#ffffff",
+  size: 0.09,
+  transparent: true,
+  opacity: 0.95,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+});
+
+const traffic = new THREE.Points(
+  trafficGeometry, trafficMaterial
+);
+
+scene.add(traffic);
+
+
+/* =====================================
+   6. 校园建筑群
+===================================== */
+
+// 主教学楼
+building(
+  "智慧教学中心", -5.5, -4.0, 5.3, 3.8, 2.4, 0.24
+);
+
+// 实验楼
+building(
+  "人工智能实验中心", 5.0, -4.0, 4.3, 5.0, 2.7, 0.23
+);
+
+// 图书馆
+building(
+  "未来图书馆", -5.0, 4.1, 4.2, 4.6, 3.0, 0.23
+);
+
+// 创新中心
+building(
+  "数字创新中心", 5.3, 4.3, 4.4, 3.4, 2.8, 0.25
+);
+
+// 后方小型建筑群
+building(
+  "学生发展中心", -10.0, -4.0, 2.3, 2.6, 2.0, 0.31
+);
+
+building(
+  "智能工程实验室", 10.0, -4.0, 2.5, 3.1, 2.1, 0.3
+);
+
+building(
+  "创意工坊", -10.0, 4.0, 2.4, 2.5, 2.0, 0.31
+);
+
+building(
+  "未来教育空间", 10.0, 4.0, 2.6, 2.8, 2.2, 0.3
+);
+
+
+/* =====================================
+   7. 中央广场：环形能量装置
+===================================== */
+
+function ringPoints(radius, y, count, cx = 0, cz = 0) {
+  const pts = [];
+
+  for (let i = 0; i < count; i++) {
+    const a = Math.PI * 2 * i / count;
+
+    pts.push(new THREE.Vector3(
+      cx + Math.cos(a) * radius,
+      y,
+      cz + Math.sin(a) * radius
+    ));
+  }
+
+  return pts;
+}
+
+createParticleGroup(
+  "中央广场 · 能量环",
+  ringPoints(2.5, 0.16, 320),
+  0.07
+);
+
+createParticleGroup(
+  "中央广场 · 内环",
+  ringPoints(1.7, 0.19, 230),
+  0.055
+);
+
+createParticleGroup(
+  "中央广场 · 外环",
+  ringPoints(3.2, 0.11, 380),
+  0.045
+);
+
+// 中央竖向能量柱
+const columnPoints = [];
+
+for (let y = 0; y < 4.8; y += 0.11) {
+  for (let i = 0; i < 32; i++) {
+    const a = Math.PI * 2 * i / 32;
+    const r = 0.36 + Math.sin(y * 2) * 0.06;
+
+    columnPoints.push(new THREE.Vector3(
+      Math.cos(a) * r,
+      y,
+      Math.sin(a) * r
+    ));
+  }
+}
+
+createParticleGroup(
+  "中央能量塔",
+  columnPoints,
+  0.07
+);
+
+
+/* =====================================
+   8. 校园景观树：粒子树冠
+===================================== */
+
+function makeTree(x, z, scale = 1) {
+  const pts = [];
+
+  // 树干
+  for (let y = 0; y < 1.1 * scale; y += 0.12) {
+    pts.push(new THREE.Vector3(
+      x, y, z
+    ));
+  }
+
+  // 球形树冠表面
+  const radius = 0.75 * scale;
+  const cy = 1.6 * scale;
+
+  for (let i = 0; i < 140; i++) {
+    const u = Math.random() * 2 - 1;
+    const a = Math.random() * Math.PI * 2;
+
+    const r = Math.sqrt(1-u*u) * radius;
+
+    pts.push(new THREE.Vector3(
+      x + r * Math.cos(a),
+      cy + u * radius,
+      z + r * Math.sin(a)
+    ));
+  }
+
+  createParticleGroup("粒子景观树", pts, 0.055);
+}
+
+for (let i = 0; i < 9; i++) {
+  const z = -8 + i * 2;
+
+  makeTree(-2.3, z, 0.75);
+  makeTree(2.3, z, 0.75);
+}
+
+makeTree(-8, -1, 0.9);
+makeTree(8, -1, 0.9);
+makeTree(-8, 7, 0.8);
+makeTree(8, 7, 0.8);
+
+
+/* =====================================
+   9. 漂浮粒子：空间氛围
+===================================== */
+
+const ambientPoints = [];
+
+for (let i = 0; i < 1600; i++) {
+  ambientPoints.push(new THREE.Vector3(
+    (Math.random() - 0.5) * 35,
+    Math.random() * 10 + 0.4,
+    (Math.random() - 0.5) * 28
+  ));
+}
+
+const ambient = createParticleGroup(
+  "空间漂浮粒子", ambientPoints, 0.045
+);
+
+
+/* =====================================
+   10. 点击粒子扰动
+===================================== */
+
+const raycaster = new THREE.Raycaster();
+raycaster.params.Points.threshold = 0.38;
+
+const mouse = new THREE.Vector2(999, 999);
+
+let pulseTime = 0;
+
+function updatePointer(e) {
+  mouse.x = (e.clientX / innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+
+  if (dragging) return;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  const hits = raycaster.intersectObjects(
+    interactiveObjects, false
+  );
+
+  if (hits.length) {
+    const obj = hits[0].object;
+
+    tooltip.style.display = "block";
+    tooltip.textContent =
+      "✦ " + obj.userData.name + " · 点击激活";
+
+    tooltip.style.left =
+      Math.min(e.clientX + 15, innerWidth - 180) + "px";
+
+    tooltip.style.top =
+      Math.min(e.clientY + 15, innerHeight - 50) + "px";
+
+    canvas.style.cursor = "pointer";
+  } else {
+    tooltip.style.display = "none";
+    canvas.style.cursor = dragging ? "grabbing" : "grab";
+  }
+}
+
+canvas.addEventListener("click", e => {
+  if (moved) return;
+
+  mouse.x = (e.clientX / innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  const hits = raycaster.intersectObjects(
+    interactiveObjects, false
+  );
+
+  if (hits.length) {
+    const obj = hits[0].object;
+
+    obj.userData.pulse = 1;
+    obj.userData.strength = 1;
+
+    pulseTime = 1;
+
+    // 每次点击都激活场景能量脉冲
+    for (const group of particleGroups) {
+      group.userData.pulse = Math.max(
+        group.userData.pulse || 0, 0.3
+      );
+    }
+  }
+});
+
+
+/* =====================================
+   11. 粒子脉冲按钮
+===================================== */
+
+document.querySelector("#explode").addEventListener(
+  "click", () => {
+    pulseTime = 1;
+
+    for (const group of particleGroups) {
+      group.userData.pulse = 1;
+      group.userData.strength = 1;
+    }
+  }
+);
+
+document.querySelector("#reset").addEventListener(
+  "click", () => {
+    targetYaw = 0.55;
+    targetPitch = 0.55;
+    targetDistance = 23;
+
+    target.set(0, 0.8, 0);
+  }
+);
+
+
+/* =====================================
+   12. 动画循环
+===================================== */
+
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const time = clock.getElapsedTime();
+  const dt = Math.min(clock.getDelta(), 0.04);
+
+  // 镜头平滑控制
+  yaw += (targetYaw - yaw) * 0.075;
+  pitch += (targetPitch - pitch) * 0.075;
+  distance += (targetDistance - distance) * 0.075;
+
+  camera.position.set(
+    target.x + distance * Math.sin(yaw) * Math.cos(pitch),
+    target.y + distance * Math.sin(pitch),
+    target.z + distance * Math.cos(yaw) * Math.cos(pitch)
+  );
+
+  camera.lookAt(target);
+
+  // 建筑粒子：细微呼吸、脉冲扩散、回归
+  for (const group of particleGroups) {
+    const attr = group.geometry.attributes.position;
+    const original = group.userData.original;
+
+    const phase = group.userData.phase;
+    let pulse = group.userData.pulse || 0;
+
+    pulse = Math.max(0, pulse - dt * 0.75);
+    group.userData.pulse = pulse;
+
+    const strength = pulse;
+
+    for (let i = 0; i < attr.count; i++) {
+      const j = i * 3;
+
+      const ox = original[j];
+      const oy = original[j + 1];
+      const oz = original[j + 2];
+
+      const noise =
+        Math.sin(time * 1.5 + i * 0.07 + phase);
+
+      const spread = strength * 0.22 * noise;
+
+      attr.array[j] =
+        ox + Math.sin(time + i * 0.08) * 0.018
+        + spread * Math.sin(i * 12.989);
+
+      attr.array[j + 1] =
+        oy + Math.sin(time * 1.8 + i * 0.04 + phase)
+        * 0.022 + spread;
+
+      attr.array[j + 2] =
+        oz + Math.cos(time + i * 0.06) * 0.018
+        + spread * Math.cos(i * 7.233);
+    }
+
+    attr.needsUpdate = true;
+
+    // 轻微闪烁
+    group.material.opacity =
+      0.77 + 0.16 * (0.5 + 0.5 *
+      Math.sin(time * 1.5 + phase));
+  }
+
+  // 道路流动光点
+  const flow = traffic.geometry.attributes.position;
+
+  for (let i = 0; i < trafficPoints.length; i++) {
+    const p = trafficPoints[i];
+
+    p.position.z += p.direction * p.speed * dt;
+
+    if (p.position.z > 11) p.position.z = -11;
+    if (p.position.z < -11) p.position.z = 11;
+
+    flow.array[i*3] = p.position.x;
+    flow.array[i*3+1] = p.position.y;
+    flow.array[i*3+2] = p.position.z;
+  }
+
+  flow.needsUpdate = true;
+
+  // 环形装置旋转
+  for (let i = 0; i < particleGroups.length; i++) {
+    const group = particleGroups[i];
+
+    if (group.userData.name.includes("能量环")) {
+      group.rotation.y = time * 0.08;
+    }
+
+    if (group.userData.name === "空间漂浮粒子") {
+      group.rotation.y = time * 0.009;
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+
+
+/* =====================================
+   13. 屏幕尺寸变化
+===================================== */
+
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
+});
+
+document.querySelector("#particleCount").textContent =
+  "≈ " + totalParticles.toLocaleString("en-US");
+
+animate();
+
+setTimeout(() => {
+  loading.classList.add("hide");
+
+  setTimeout(() => loading.remove(), 1000);
+}, 900);
+
+</script>
+</body>
+</html>
